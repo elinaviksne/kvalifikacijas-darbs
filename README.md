@@ -30,8 +30,10 @@ Vienkārša React Native mobilā aplikācija, lai atklātu koncertus un pārvald
 git clone <url>
 cd ConcerFinder
 
-2. **Instalēt dependencies**
+2. **Instalēt dependencies:**
+
 npm install
 
-3. **Palaist aplikāciju**
+3. **Palaist aplikāciju:**
+
 npx expo start
