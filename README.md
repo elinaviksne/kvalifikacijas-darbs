@@ -28,6 +28,7 @@ Vienkārša React Native mobilā aplikācija, lai atklātu koncertus un pārvald
 1. **Klonēt repozitoriju:**
 
 git clone <url>
+
 cd ConcerFinder
 
 2. **Instalēt dependencies:**
