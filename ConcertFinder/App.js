@@ -1,8 +1,10 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, FlatList } from 'react-native';
-import { useEffect, useState } from 'react';
+import styles from "./styles";
 
-const API_KEY = "5lXcgONUwiIfm9ZIRYuA2t04jhvRErrk"; 
+import { StatusBar } from "expo-status-bar";
+import { Linking, Text, View, FlatList, TouchableOpacity } from "react-native";
+import { useEffect, useState } from "react";
+
+const API_KEY = "5lXcgONUwiIfm9ZIRYuA2t04jhvRErrk";
 const BASE_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
 
 export default function App() {
@@ -17,11 +19,12 @@ export default function App() {
         const data = await response.json();
 
         if (data._embedded && data._embedded.events) {
-          const cleanEvents = data._embedded.events.map(event => ({
+          const cleanEvents = data._embedded.events.map((event) => ({
             id: event.id,
             name: event.name,
             date: event.dates.start.localDate,
             venue: event._embedded.venues[0].name,
+            url: event.url,
           }));
           setEvents(cleanEvents);
         }
@@ -33,38 +36,31 @@ export default function App() {
     fetchEvents();
   }, []);
 
+  const renderEvent = ({ item }) => (
+    <View style={styles.card}>
+      <View style={styles.imagePlaceholder}>
+      </View>
+      <Text style={styles.eventName}>{item.name}</Text>
+      <Text style={styles.eventDate}>{item.date}</Text>
+      <Text style={styles.eventVenue}>{item.venue}</Text>
+      <TouchableOpacity 
+        style={styles.ticketButton}
+        onPress={() => Linking.openURL(item.url)}>
+        <Text style={styles.ticketButtonText}>Tickets</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🎶 ConcertFinder</Text>
+      <Text style={styles.title}>Concerts</Text>
       <FlatList
         data={events}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <Text style={styles.event}>
-            {item.name} - {item.date} @ {item.venue}
-          </Text>
-        )}
+        keyExtractor={(item) => item.id}
+        renderItem={renderEvent}
+        contentContainerStyle={styles.list}
       />
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 50,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  event: {
-    fontSize: 16,
-    marginBottom: 10,
-  },
-});
