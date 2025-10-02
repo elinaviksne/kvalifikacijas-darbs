@@ -6,7 +6,7 @@ Vienkārša React Native mobilā aplikācija, lai atklātu koncertus un pārvald
 
 ## Funkcijas
 
-- Pārlūkot gaidāmos koncertus ar nosaukumu, datumu un vietu.
+- Var redzēt gaidāmos koncertus, tiem ir bilde, nosaukums, datums un vieta.
 - Atvērt biļešu saites, spiežot pogu "Tickets".
 
 ---
