@@ -1,7 +1,6 @@
 import styles from "./styles";
-
 import { StatusBar } from "expo-status-bar";
-import { Linking, Text, View, FlatList, TouchableOpacity } from "react-native";
+import { Linking, Text, View, FlatList, TouchableOpacity, Image } from "react-native";
 import { useEffect, useState } from "react";
 
 const API_KEY = "5lXcgONUwiIfm9ZIRYuA2t04jhvRErrk";
@@ -25,6 +24,7 @@ export default function App() {
             date: event.dates.start.localDate,
             venue: event._embedded.venues[0].name,
             url: event.url,
+            image: event.images && event.images.length > 0 ? event.images[0].url : null,
           }));
           setEvents(cleanEvents);
         }
@@ -38,14 +38,16 @@ export default function App() {
 
   const renderEvent = ({ item }) => (
     <View style={styles.card}>
-      <View style={styles.imagePlaceholder}>
-      </View>
+      {item.image && (
+        <Image source={{ uri: item.image }} style={styles.eventImage} />
+      )}
       <Text style={styles.eventName}>{item.name}</Text>
       <Text style={styles.eventDate}>{item.date}</Text>
       <Text style={styles.eventVenue}>{item.venue}</Text>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.ticketButton}
-        onPress={() => Linking.openURL(item.url)}>
+        onPress={() => Linking.openURL(item.url)}
+      >
         <Text style={styles.ticketButtonText}>Tickets</Text>
       </TouchableOpacity>
     </View>

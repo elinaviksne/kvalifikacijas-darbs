@@ -22,14 +22,14 @@ export default StyleSheet.create({
     padding: 20,
     marginBottom: 20,
   },
-  imagePlaceholder: {
-    backgroundColor: "#ff5722",
-    borderRadius: 12,
-    height: 150,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 15,
-  },
+  eventImage: {
+  width: "100%",
+  height: 200,
+  borderRadius: 10,
+  marginBottom: 10,
+  resizeMode: "cover",
+},
+
   eventName: {
     fontSize: 18,
     fontWeight: "bold",
