@@ -5,9 +5,11 @@ Vienkārša React Native mobilā aplikācija, lai atklātu koncertus un pārvald
 ---
 
 ## Funkcijas
-
+# Homepage
 - Var redzēt gaidāmos koncertus, tiem ir bilde, nosaukums, datums un vieta.
 - Atvērt biļešu saites, spiežot pogu "Tickets".
+
+# Discovery
 
 ---
 
@@ -22,15 +24,17 @@ Vienkārša React Native mobilā aplikācija, lai atklātu koncertus un pārvald
   - Vietu
   - Pogu "Tickets" (atver saiti uz pasākumu)
 
+### Discovery
+
 ---
 
 ## Instalācija
 
 1. **Klonēt repozitoriju:**
 
-git clone <url>
+git clone <https://github.com/elinaviksne/kvalifikacijas-darbs.git>
 
-cd ConcerFinder
+cd ConcertFinder
 
 2. **Instalēt dependencies:**
 
