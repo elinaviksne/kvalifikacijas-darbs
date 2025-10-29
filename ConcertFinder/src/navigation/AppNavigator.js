@@ -11,7 +11,11 @@ export default function AppNavigator() {
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
-                tabBarStyle: { backgroundColor: "#1E1E1E" },
+                tabBarStyle: {
+                    backgroundColor: "#1E1E1E",
+                    paddingBottom: 10,
+                    height: 60,
+                },
                 tabBarActiveTintColor: "#FF6F00",
                 tabBarInactiveTintColor: "#888",
                 tabBarIcon: ({ color, size }) => {
@@ -21,6 +25,7 @@ export default function AppNavigator() {
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
             })}
+            tabBarSafeAreaInsets={{ bottom: 10 }}
         >
             <Tab.Screen
                 name="HomeTab"
@@ -30,7 +35,7 @@ export default function AppNavigator() {
             <Tab.Screen
                 name="DiscoveryTab"
                 component={DiscoveryStackNavigator}
-                options={{ title: "Discovery" }}
+                options={{ title: "Discover" }}
             />
         </Tab.Navigator>
     );

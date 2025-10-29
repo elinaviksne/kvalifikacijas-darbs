@@ -23,12 +23,12 @@ export default StyleSheet.create({
     marginBottom: 20,
   },
   eventImage: {
-  width: "100%",
-  height: 200,
-  borderRadius: 10,
-  marginBottom: 10,
-  resizeMode: "cover",
-},
+    width: "100%",
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 10,
+    resizeMode: "cover",
+  },
 
   eventName: {
     fontSize: 18,

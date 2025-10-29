@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ConcertFinder",
-    "slug": "ConcertFinder",
+    "slug": "concertfinder",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,6 +24,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "73dceb1e-e408-4db3-92d7-a752f1f59eb9"
+      }
+    },
+    "owner": "elina.viksne"
   }
 }
