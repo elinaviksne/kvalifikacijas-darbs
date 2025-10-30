@@ -4,7 +4,6 @@ export default StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#111",
-    paddingTop: 60,
     paddingHorizontal: 20,
   },
   title: {
@@ -14,7 +13,8 @@ export default StyleSheet.create({
     marginBottom: 20,
   },
   list: {
-    paddingBottom: 100,
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: "#222",

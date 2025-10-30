@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { StatusBar } from "expo-status-bar";
-import { Linking, Text, View, FlatList, TouchableOpacity, Image } from "react-native";
+import { useEffect, useState } from "react";
+import { Linking, Text, View, FlatList, TouchableOpacity, Image, } from "react-native";
 import styles from "../styles/HomeScreenStyles";
 
 const API_KEY = "5lXcgONUwiIfm9ZIRYuA2t04jhvRErrk";
@@ -56,7 +55,6 @@ export default function HomeScreen() {
                 renderItem={renderEvent}
                 contentContainerStyle={styles.list}
             />
-            <StatusBar style="light" />
         </View>
     );
 }

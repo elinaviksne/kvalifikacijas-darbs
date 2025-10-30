@@ -1,4 +1,3 @@
-import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import DiscoveryScreen from "../screens/DiscoveryScreen";
 
@@ -9,12 +8,12 @@ export default function DiscoveryStackNavigator() {
         <Stack.Navigator
             screenOptions={{
                 headerStyle: {
-                    backgroundColor: "#1E1E1E",
+                    backgroundColor: "#222",
+                    borderBottomColor: 'transparent'
                 },
                 headerTintColor: "#FF6F00",
                 headerTitleAlign: "center",
-                statusBarStyle: "light",
-                headerShadowVisible: false,
+                headerHideShadow: true
             }}
         >
             <Stack.Screen
