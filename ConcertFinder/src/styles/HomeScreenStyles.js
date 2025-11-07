@@ -46,7 +46,7 @@ export default StyleSheet.create({
     marginBottom: 15,
   },
   ticketButton: {
-    backgroundColor: "#00c4b4",
+    backgroundColor: "#FF6F00",
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
