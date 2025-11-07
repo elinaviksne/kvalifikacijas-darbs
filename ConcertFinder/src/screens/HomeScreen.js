@@ -1,60 +1,53 @@
-import { useEffect, useState } from "react";
-import { Linking, Text, View, FlatList, TouchableOpacity, Image, } from "react-native";
+import { useEffect, useState, useCallback } from "react";
+import { Linking, Text, View, FlatList, TouchableOpacity, Image } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import styles from "../styles/HomeScreenStyles";
-
-const API_KEY = "5lXcgONUwiIfm9ZIRYuA2t04jhvRErrk";
-const BASE_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
+import { fetchConcerts } from "../services/ConcertService";
 
 export default function HomeScreen() {
     const [events, setEvents] = useState([]);
 
     useEffect(() => {
-        async function fetchEvents() {
-            try {
-                const response = await fetch(
-                    `${BASE_URL}?apikey=${API_KEY}&keyword=rock&city=New York`
-                );
-                const data = await response.json();
+        let isMounted = true;
 
-                if (data._embedded?.events) {
-                    const cleanEvents = data._embedded.events.map((event) => ({
-                        id: event.id,
-                        name: event.name,
-                        date: event.dates.start.localDate,
-                        venue: event._embedded.venues[0].name,
-                        url: event.url,
-                        image: event.images?.[0]?.url || null,
-                    }));
-                    setEvents(cleanEvents);
-                }
-            } catch (err) {
-                console.error("Error fetching events:", err);
-            }
+        async function loadEvents() {
+            const data = await fetchConcerts({ keyword: "rock", city: "New York" });
+            if (isMounted) setEvents(data);
         }
 
-        fetchEvents();
+        loadEvents();
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
-    const renderEvent = ({ item }) => (
+    const renderEvent = useCallback(({ item }) => (
         <View style={styles.card}>
-            {item.image && <Image source={{ uri: item.image }} style={styles.eventImage} />}
+            {item.image && (
+                <Image source={{ uri: item.image }} style={styles.eventImage} resizeMode="cover" />
+            )}
             <Text style={styles.eventName}>{item.name}</Text>
             <Text style={styles.eventDate}>{item.date}</Text>
             <Text style={styles.eventVenue}>{item.venue}</Text>
-            <TouchableOpacity style={styles.ticketButton} onPress={() => Linking.openURL(item.url)}>
+
+            <TouchableOpacity
+                style={styles.ticketButton}
+                onPress={() => Linking.openURL(item.url)}
+            >
                 <Text style={styles.ticketButtonText}>Tickets</Text>
             </TouchableOpacity>
         </View>
-    );
+    ), []);
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <FlatList
                 data={events}
                 keyExtractor={(item) => item.id}
                 renderItem={renderEvent}
                 contentContainerStyle={styles.list}
+                showsVerticalScrollIndicator={false}
             />
-        </View>
+        </SafeAreaView>
     );
 }
