@@ -8,7 +8,7 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar
         hidden={false}
-        backgroundColor="#111"
+        backgroundColor="#222"
         barStyle="light-content"
         translucent={false} />
       <NavigationContainer>
