@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Text, View, FlatList, ActivityIndicator, Image, TouchableOpacity, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import styles from "../styles/HomeScreenStyles"; // reuse card styling
+import styles from "../styles/HomeScreenStyles";
 import { fetchConcerts } from "../services/ConcertService";
 
 
@@ -30,9 +30,6 @@ export default function GenreResultsScreen({ route }) {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Text style={{ fontSize: 24, marginBottom: 16, color: "white" }}>
-                {genre} Concerts
-            </Text>
 
             <FlatList
                 data={events}
