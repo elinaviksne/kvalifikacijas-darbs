@@ -1,53 +1,74 @@
-import { useEffect, useState, useCallback } from "react";
-import { Linking, Text, View, FlatList, TouchableOpacity, Image } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import styles from "../styles/HomeScreenStyles";
+import { useEffect, useState } from "react";
+import { View, FlatList, ActivityIndicator, Text } from "react-native";
+import * as Location from "expo-location";
+import ConcertCard from "../components/ConcertCard";
 import { fetchConcerts } from "../services/ConcertService";
+import styles from "../styles/HomeScreenStyles";
 
 export default function HomeScreen() {
     const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let isMounted = true;
 
         async function loadEvents() {
-            const data = await fetchConcerts({ keyword: "rock", city: "New York" });
-            if (isMounted) setEvents(data);
+            setLoading(true);
+            setEvents([]);
+
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    console.warn("Location permission denied");
+                    setLoading(false);
+                    return;
+                }
+
+                const location = await Location.getCurrentPositionAsync({});
+                const data = await fetchConcerts({ keyword: 'rock', latlong: location.coords });
+
+                if (isMounted) {
+                    setEvents(data);
+                    setLoading(false);
+                }
+            } catch (error) {
+                console.error("Error fetching concerts:", error);
+                setLoading(false);
+            }
         }
 
         loadEvents();
-        return () => {
-            isMounted = false;
-        };
+
+        return () => { isMounted = false; };
     }, []);
 
-    const renderEvent = useCallback(({ item }) => (
-        <View style={styles.card}>
-            {item.image && (
-                <Image source={{ uri: item.image }} style={styles.eventImage} resizeMode="cover" />
-            )}
-            <Text style={styles.eventName}>{item.name}</Text>
-            <Text style={styles.eventDate}>{item.date}</Text>
-            <Text style={styles.eventVenue}>{item.venue}</Text>
+    if (loading) {
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#FF6F00" />
+            </View>
+        );
+    }
 
-            <TouchableOpacity
-                style={styles.ticketButton}
-                onPress={() => Linking.openURL(item.url)}
-            >
-                <Text style={styles.ticketButtonText}>Tickets</Text>
-            </TouchableOpacity>
-        </View>
-    ), []);
+    if (events.length === 0) {
+        return (
+            <View style={styles.container}>
+                <Text style={{ color: 'white' }}>No concerts found near you.</Text>
+            </View>
+        );
+    }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <FlatList
                 data={events}
                 keyExtractor={(item) => item.id}
-                renderItem={renderEvent}
+                renderItem={({ item }) => <ConcertCard item={item} />}
                 contentContainerStyle={styles.list}
-                showsVerticalScrollIndicator={false}
+                initialNumToRender={5}
+                maxToRenderPerBatch={10}
+                windowSize={5}
             />
-        </SafeAreaView>
+        </View>
     );
 }
