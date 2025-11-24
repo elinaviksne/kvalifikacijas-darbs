@@ -20,7 +20,7 @@ export async function fetchConcerts({ keyword = "rock", city, latlong, radius = 
             id: event.id,
             name: event.name,
             date: event.dates.start.localDate,
-            venue: event._embedded.venues?.[0]?.name ?? "Unknown venue",
+            venue: event._embedded?.venues?.[0]?.name ?? "Unknown venue",
             url: event.url,
             image: event.images?.[0]?.url ?? null,
         }));
