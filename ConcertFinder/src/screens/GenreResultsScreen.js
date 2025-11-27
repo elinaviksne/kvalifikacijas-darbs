@@ -17,6 +17,7 @@ export default function GenreResultsScreen({ route }) {
         setEvents([]);
 
         async function loadGenreEvents() {
+            // Iegūst koncertus no API pēc izvēlētā žanra
             const data = await fetchConcerts({ keyword: genre });
             if (isMounted) {
                 setEvents(data);
@@ -40,6 +41,7 @@ export default function GenreResultsScreen({ route }) {
     return (
         <View style={styles.container}>
 
+            {/* Saraksts ar koncertiem */}
             <FlatList
                 data={events}
                 keyExtractor={(item) => item.id}

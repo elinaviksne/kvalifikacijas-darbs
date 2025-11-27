@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity, Linking } from "react-native";
 import styles from "../styles/HomeScreenStyles";
 
 const ConcertCard = ({ item }) => (
+    // Kartīte, kas attēlo vienu koncerta ierakstu
     <View style={styles.card}>
         {item.image && <Image source={{ uri: item.image }} style={styles.eventImage} />}
         <Text style={styles.eventName}>{item.name}</Text>

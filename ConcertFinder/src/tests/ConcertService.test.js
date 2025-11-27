@@ -6,6 +6,7 @@ beforeEach(() => {
     fetch.resetMocks();
 });
 
+// Mock API atbilde ar vienu koncertu
 const mockApiResponse = {
     _embedded: {
         events: [
@@ -21,6 +22,7 @@ const mockApiResponse = {
     }
 };
 
+// Tests: fetchConcerts pareizi atgriež datus, kad ir norādīta pilsēta
 test('fetchConcerts returns mapped events correctly with city', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
 
@@ -40,6 +42,7 @@ test('fetchConcerts returns mapped events correctly with city', async () => {
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining('city=New%20York'));
 });
 
+// Tests: fetchConcerts pareizi atgriež datus pēc GPS koordinātām
 test('fetchConcerts returns mapped events correctly with latlong', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
     const latlong = { latitude: 40.7128, longitude: -74.0060 };
@@ -54,6 +57,7 @@ test('fetchConcerts returns mapped events correctly with latlong', async () => {
     );
 });
 
+// Tests: ja nav atrasti koncerti, atgriež tukšu masīvu
 test('fetchConcerts returns empty array if no events', async () => {
     fetch.mockResponseOnce(JSON.stringify({}));
 
@@ -62,6 +66,7 @@ test('fetchConcerts returns empty array if no events', async () => {
     expect(concerts).toEqual([]);
 });
 
+// Tests: fetch kļūdas gadījumā funkcija atgriež tukšu masīvu
 test('fetchConcerts handles fetch errors gracefully', async () => {
     fetch.mockRejectOnce(new Error('Network error'));
 
@@ -70,6 +75,7 @@ test('fetchConcerts handles fetch errors gracefully', async () => {
     expect(concerts).toEqual([]);
 });
 
+// Tests: noklusējuma keyword ir "rock"
 test('fetchConcerts defaults keyword to "rock"', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
 
@@ -78,6 +84,7 @@ test('fetchConcerts defaults keyword to "rock"', async () => {
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining('keyword=rock'));
 });
 
+// Tests: ja trūkst izvēles lauku, tiek izmantoti default vērtības
 test('fetchConcerts handles missing optional fields', async () => {
     const incompleteResponse = {
         _embedded: { events: [{ id: '2', name: 'Jazz Night', dates: { start: { localDate: '2025-11-20' } } }] }
@@ -90,6 +97,7 @@ test('fetchConcerts handles missing optional fields', async () => {
     expect(concerts[0].image).toBeNull();
 });
 
+// Tests: vairāku koncertu atgriešana un pareiza datu transformācija
 test('fetchConcerts maps multiple events correctly', async () => {
     const multiEventResponse = {
         _embedded: {

@@ -5,7 +5,10 @@ import { StatusBar } from "react-native";
 
 export default function App() {
   return (
+    // Nodrošina pareizu satura attēlošanu ierīcēs ar robiem, 
+    // statusu joslu un apakšējo joslu
     <SafeAreaProvider>
+      {/* Globālie statusa joslas (StatusBar) stili visai aplikācijai */}
       <StatusBar
         hidden={false}
         backgroundColor="#222"

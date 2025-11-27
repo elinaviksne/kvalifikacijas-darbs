@@ -7,6 +7,7 @@ const Tab = createBottomTabNavigator();
 
 export default function AppNavigator() {
     return (
+        // Apakšējās navigācijas joslas konfigurācija
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
@@ -29,6 +30,7 @@ export default function AppNavigator() {
             lazy={false}
             sceneContainerStyle={{ backgroundColor: "#111" }}
         >
+            {/* Sākumlapa ar savu Stack navigatoru */}
             <Tab.Screen
                 name="HomeTab"
                 component={HomeStackNavigator}
@@ -37,6 +39,7 @@ export default function AppNavigator() {
                     unmountOnBlur: false,
                 }}
             />
+            {/* Atklāšanas/Discovery lapa ar savu Stack navigatoru */}
             <Tab.Screen
                 name="DiscoveryTab"
                 component={DiscoveryStackNavigator}
