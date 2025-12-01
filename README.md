@@ -10,6 +10,10 @@ Vienkārša React Native mobilā aplikācija, lai atklātu koncertus un pārvald
 - Atvērt biļešu saites, spiežot pogu "Tickets".
 
 # Discovery
+- Var meklēt koncertus pēc žanriem.
+
+# GenreResults
+-Var redzēt koncertus ar konkrētu žanru.
 
 ---
 
@@ -25,7 +29,16 @@ Vienkārša React Native mobilā aplikācija, lai atklātu koncertus un pārvald
   - Pogu "Tickets" (atver saiti uz pasākumu)
 
 ### Discovery
+- Parāda žanru sarakstu, uz žanriem var spiest.
 
+### GenreResults
+- Parāda konkrēta žanra koncertus:
+  - Bildi
+  - Nosaukumu
+  - Datumu
+  - Vietu
+  - Pogu "Tickets"
+    
 ---
 
 ## Instalācija
