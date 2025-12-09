@@ -6,7 +6,7 @@ beforeEach(() => {
     fetch.resetMocks();
 });
 
-// Mock API atbilde ar vienu koncertu
+// Mock API response with one concert
 const mockApiResponse = {
     _embedded: {
         events: [
@@ -22,7 +22,7 @@ const mockApiResponse = {
     }
 };
 
-// Tests: fetchConcerts pareizi atgriež datus, kad ir norādīta pilsēta
+// Test: fetchConcerts returns mapped events correctly with city
 test('fetchConcerts returns mapped events correctly with city', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
 
@@ -42,7 +42,7 @@ test('fetchConcerts returns mapped events correctly with city', async () => {
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining('city=New%20York'));
 });
 
-// Tests: fetchConcerts pareizi atgriež datus pēc GPS koordinātām
+// Test: fetchConcerts returns mapped events correctly with latlong
 test('fetchConcerts returns mapped events correctly with latlong', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
     const latlong = { latitude: 40.7128, longitude: -74.0060 };
@@ -57,7 +57,7 @@ test('fetchConcerts returns mapped events correctly with latlong', async () => {
     );
 });
 
-// Tests: ja nav atrasti koncerti, atgriež tukšu masīvu
+// Test: returns empty array if no events
 test('fetchConcerts returns empty array if no events', async () => {
     fetch.mockResponseOnce(JSON.stringify({}));
 
@@ -66,7 +66,7 @@ test('fetchConcerts returns empty array if no events', async () => {
     expect(concerts).toEqual([]);
 });
 
-// Tests: fetch kļūdas gadījumā funkcija atgriež tukšu masīvu
+// Test: handles fetch errors gracefully
 test('fetchConcerts handles fetch errors gracefully', async () => {
     fetch.mockRejectOnce(new Error('Network error'));
 
@@ -75,7 +75,7 @@ test('fetchConcerts handles fetch errors gracefully', async () => {
     expect(concerts).toEqual([]);
 });
 
-// Tests: noklusējuma keyword ir "rock"
+// Test: default keyword is "rock"
 test('fetchConcerts defaults keyword to "rock"', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
 
@@ -84,20 +84,24 @@ test('fetchConcerts defaults keyword to "rock"', async () => {
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining('keyword=rock'));
 });
 
-// Tests: ja trūkst izvēles lauku, tiek izmantoti default vērtības
-test('fetchConcerts handles missing optional fields', async () => {
+// Test: events missing required fields are filtered out
+test('fetchConcerts filters events missing required fields', async () => {
     const incompleteResponse = {
-        _embedded: { events: [{ id: '2', name: 'Jazz Night', dates: { start: { localDate: '2025-11-20' } } }] }
+        _embedded: {
+            events: [
+                { id: '2', name: 'Jazz Night', dates: { start: { localDate: '2025-11-20' } } } // missing venue, url, images
+            ]
+        }
     };
     fetch.mockResponseOnce(JSON.stringify(incompleteResponse));
 
     const concerts = await fetchConcerts({ keyword: 'jazz' });
 
-    expect(concerts[0].venue).toBe('Unknown venue');
-    expect(concerts[0].image).toBeNull();
+    // Event should be filtered out
+    expect(concerts).toEqual([]);
 });
 
-// Tests: vairāku koncertu atgriešana un pareiza datu transformācija
+// Test: maps multiple events correctly
 test('fetchConcerts maps multiple events correctly', async () => {
     const multiEventResponse = {
         _embedded: {
@@ -109,7 +113,7 @@ test('fetchConcerts maps multiple events correctly', async () => {
                     dates: { start: { localDate: '2025-12-01' } },
                     _embedded: { venues: [{ name: 'Staples Center' }] },
                     url: 'https://ticketmaster.com/event/2',
-                    images: []
+                    images: [{ url: 'https://image.url/2.jpg' }]
                 }
             ]
         }
@@ -119,6 +123,12 @@ test('fetchConcerts maps multiple events correctly', async () => {
     const concerts = await fetchConcerts({ keyword: 'music' });
 
     expect(concerts.length).toBe(2);
-    expect(concerts[1].venue).toBe('Staples Center');
-    expect(concerts[1].image).toBeNull();
+    expect(concerts[1]).toEqual({
+        id: '2',
+        name: 'Pop Concert',
+        date: '2025-12-01',
+        venue: 'Staples Center',
+        url: 'https://ticketmaster.com/event/2',
+        image: 'https://image.url/2.jpg'
+    });
 });
