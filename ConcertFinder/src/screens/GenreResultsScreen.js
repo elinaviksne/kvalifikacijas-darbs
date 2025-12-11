@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Text, View, FlatList, ActivityIndicator } from "react-native";
+import { View, FlatList, ActivityIndicator } from "react-native";
 import ConcertCard from "../components/ConcertCard";
 import { fetchConcerts } from "../services/ConcertService";
 import styles from "../styles/HomeScreenStyles";

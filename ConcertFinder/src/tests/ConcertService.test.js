@@ -1,6 +1,6 @@
 import { fetchConcerts } from '../services/ConcertService';
 
-global.fetch = require('jest-fetch-mock');
+globalThis.fetch = require('jest-fetch-mock');
 
 beforeEach(() => {
     fetch.resetMocks();
