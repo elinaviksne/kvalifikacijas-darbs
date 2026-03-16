@@ -1,71 +1,71 @@
 import { StyleSheet } from "react-native";
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 
 export default StyleSheet.create({
   // Galvenais ekrāna konteineris
   container: {
     flex: 1,
+    width: "100%",
     backgroundColor: "#111",
-    paddingHorizontal: wp("5%"),
+    paddingHorizontal: 20,
   },
 
   title: {
-    fontSize: hp("3.2%"),
+    fontSize: 26,
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: hp("2.5%"),
+    marginBottom: 20,
   },
 
   list: {
-    paddingTop: hp("5%"),
-    paddingBottom: hp("5%"),
+    paddingTop: 40,
+    paddingBottom: 40,
   },
 
   /* Kartītes (ConcertCard) stili */
   card: {
     backgroundColor: "#222",
-    borderRadius: wp("5%"),
-    padding: wp("5%"),
-    marginBottom: hp("2.5%"),
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
   },
 
   eventImage: {
     width: "100%",
-    height: hp("25%"),
-    borderRadius: wp("3%"),
-    marginBottom: hp("1.5%"),
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 12,
     resizeMode: "cover",
   },
 
   eventName: {
-    fontSize: hp("2.2%"),
+    fontSize: 18,
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: hp("0.8%"),
+    marginBottom: 6,
   },
 
   eventDate: {
-    fontSize: hp("1.8%"),
+    fontSize: 14,
     color: "#aaa",
   },
 
   eventVenue: {
-    fontSize: hp("1.8%"),
+    fontSize: 14,
     color: "#ccc",
-    marginBottom: hp("2%"),
+    marginBottom: 16,
   },
 
   /* Biļešu pogas stili */
   ticketButton: {
     backgroundColor: "#FF6F00",
-    paddingVertical: hp("1.3%"),
-    borderRadius: wp("3%"),
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: "center",
   },
 
   ticketButtonText: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: hp("2%"),
+    fontSize: 16,
   },
 });
