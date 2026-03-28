@@ -1,4 +1,10 @@
-import { fetchConcerts, fetchBilesuParadizeConcerts } from '../services/ConcertService';
+import {
+    fetchConcerts,
+    fetchBilesuParadizeConcerts,
+    bilesuEventMatchesGenre,
+    genreIdFromLabel,
+    fetchBilesuParadizeForGenre,
+} from '../services/ConcertService';
 
 globalThis.fetch = require('jest-fetch-mock');
 
@@ -154,4 +160,61 @@ test('fetchBilesuParadizeConcerts returns empty array on error', async () => {
     const concerts = await fetchBilesuParadizeConcerts({ venueIds: [1] });
 
     expect(concerts).toEqual([]);
+});
+
+test('genreIdFromLabel maps Discovery labels', () => {
+    expect(genreIdFromLabel('Pop')).toBe('pop');
+    expect(genreIdFromLabel('Hip-Hop')).toBe('hiphop');
+    expect(genreIdFromLabel('Unknown')).toBeNull();
+});
+
+test('bilesuEventMatchesGenre uses categories and titles', () => {
+    const rockPop = {
+        performance: {
+            categories: [{ en: 'Rock & Pop', lv: 'Roks' }],
+            titles: { en: 'Some show' },
+        },
+    };
+    expect(bilesuEventMatchesGenre(rockPop, 'rock')).toBe(true);
+    expect(bilesuEventMatchesGenre(rockPop, 'pop')).toBe(true);
+    expect(bilesuEventMatchesGenre(rockPop, 'classical')).toBe(false);
+
+    const jazzOnly = {
+        performance: {
+            categories: [{ en: 'Jazz & Blues' }],
+            titles: {},
+        },
+    };
+    expect(bilesuEventMatchesGenre(jazzOnly, 'jazz')).toBe(true);
+
+    const titleRap = {
+        performance: {
+            categories: [{ en: 'Concerts' }],
+            titles: { en: 'Latvian Rap Night' },
+        },
+    };
+    expect(bilesuEventMatchesGenre(titleRap, 'hiphop')).toBe(true);
+});
+
+test('fetchBilesuParadizeForGenre filters and caps results', async () => {
+    const jazzEvent = {
+        id: 1,
+        dateTime: '2026-05-01T20:00:00',
+        performance: { categories: [{ en: 'Jazz & Blues' }], titles: {} },
+    };
+    const rockEvent = {
+        id: 2,
+        dateTime: '2026-04-01T20:00:00',
+        performance: { categories: [{ en: 'Classic music' }], titles: {} },
+    };
+    fetch.mockResponseOnce(JSON.stringify([jazzEvent, rockEvent]));
+
+    const out = await fetchBilesuParadizeForGenre('jazz', {
+        venueIds: [54],
+        maxTotal: 10,
+    });
+
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe('bp-1');
+    expect(out[0].performance.categories[0].en).toBe('Jazz & Blues');
 });
