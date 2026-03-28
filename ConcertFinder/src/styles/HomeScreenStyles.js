@@ -1,7 +1,6 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-  // Galvenais ekrāna konteineris
   container: {
     flex: 1,
     width: "100%",
@@ -21,7 +20,6 @@ export default StyleSheet.create({
     paddingBottom: 40,
   },
 
-  /* Kartītes (ConcertCard) stili */
   card: {
     backgroundColor: "#222",
     borderRadius: 20,
@@ -55,7 +53,6 @@ export default StyleSheet.create({
     marginBottom: 16,
   },
 
-  /* Biļešu pogas stili */
   ticketButton: {
     backgroundColor: "#FF6F00",
     paddingVertical: 12,

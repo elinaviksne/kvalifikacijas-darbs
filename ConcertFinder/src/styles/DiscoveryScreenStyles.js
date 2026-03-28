@@ -1,7 +1,6 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-    // Galvenais konteineris ekrānam
     container: {
         flex: 1,
         width: "100%",
@@ -9,12 +8,10 @@ export default StyleSheet.create({
         padding: 16,
     },
 
-    // FlatList saraksta apakšējā atstarpe
     list: {
         paddingBottom: 20,
     },
 
-    // Stils katram žanra pogas blokam
     genreBox: {
         backgroundColor: "#FF6F00",
         height: 120,
@@ -26,7 +23,6 @@ export default StyleSheet.create({
         marginHorizontal: 6,
     },
 
-    // Teksta stils žanra nosaukumam
     genreText: {
         fontSize: 18,
         fontWeight: "bold",

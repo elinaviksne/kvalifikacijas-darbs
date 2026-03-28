@@ -6,7 +6,6 @@ const Stack = createNativeStackNavigator();
 
 export default function DiscoveryStackNavigator() {
     return (
-        // Stack navigators Discovery sadaļai (meklēšana + žanru rezultāti)
         <Stack.Navigator
             screenOptions={{
                 headerStyle: {
@@ -18,14 +17,12 @@ export default function DiscoveryStackNavigator() {
                 headerHideShadow: true
             }}
         >
-            {/* Galvenais Discovery ekrāns ar meklēšanu un ieteikumiem */}
             <Stack.Screen
                 name="DiscoveryMain"
                 component={DiscoveryScreen}
                 options={{ title: "Discover" }}
             />
 
-            {/* Žanra rezultātu ekrāns */}
             <Stack.Screen
                 name="GenreResults"
                 component={GenreResultsScreen}

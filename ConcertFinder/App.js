@@ -4,19 +4,18 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "react-native";
 
 export default function App() {
+  // SafeAreaProvider — pareiza satura novietošana pie izciļņu un statusa joslas.
   return (
-    // Nodrošina pareizu satura attēlošanu ierīcēs ar robiem, 
-    // statusu joslu un apakšējo joslu
     <SafeAreaProvider>
-      {/* Globālie statusa joslas (StatusBar) stili visai aplikācijai */}
       <StatusBar
         hidden={false}
         backgroundColor="#222"
         barStyle="light-content"
-        translucent={false} />
+        translucent={false}
+      />
       <NavigationContainer>
         <AppNavigator />
       </NavigationContainer>
-    </SafeAreaProvider >
+    </SafeAreaProvider>
   );
 }

@@ -5,7 +5,6 @@ const Stack = createNativeStackNavigator();
 
 export default function HomeStackNavigator() {
     return (
-        // Stack navigators sākumlapai (Home)
         <Stack.Navigator
             screenOptions={{
                 headerStyle: {

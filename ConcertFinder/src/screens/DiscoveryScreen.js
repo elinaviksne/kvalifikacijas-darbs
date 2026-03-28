@@ -2,7 +2,6 @@ import { Text, TouchableOpacity, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styles from "../styles/DiscoveryScreenStyles";
 
-// Pieejamie mūzikas žanri, ko lietotājs var izvēlēties
 const GENRES = [
     { id: "rock", label: "Rock" },
     { id: "pop", label: "Pop" },
@@ -14,7 +13,6 @@ const GENRES = [
     { id: "classical", label: "Classical" },
 ];
 
-// Renderē žanra kastīti
 export default function DiscoveryScreen({ navigation }) {
     const renderGenre = ({ item }) => (
         <TouchableOpacity
@@ -29,7 +27,6 @@ export default function DiscoveryScreen({ navigation }) {
         </TouchableOpacity>
     );
 
-    // Saraksts ar žanriem
     return (
         <SafeAreaView style={styles.container}>
             <FlatList

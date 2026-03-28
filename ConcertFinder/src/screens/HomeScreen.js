@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { View, FlatList, ActivityIndicator, Text } from "react-native";
 import * as Location from "expo-location";
-import ConcertCard from "../components/ConcertCard";
-import { fetchConcerts } from "../services/ConcertService";
+import ConcertCard, { getConcertSortDate } from "../components/ConcertCard";
+import { fetchConcerts, fetchBilesuParadizeConcerts } from "../services/ConcertService";
 import styles from "../styles/HomeScreenStyles";
 
 export default function HomeScreen() {
@@ -17,7 +17,6 @@ export default function HomeScreen() {
             setEvents([]);
 
             try {
-                // Pieprasa lietotāja atrašanās vietas atļauju
                 const { status } = await Location.requestForegroundPermissionsAsync();
                 if (status !== 'granted') {
                     console.warn("Location permission denied");
@@ -26,10 +25,18 @@ export default function HomeScreen() {
                 }
 
                 const location = await Location.getCurrentPositionAsync({});
-                const data = await fetchConcerts({ keyword: 'rock', latlong: location.coords });
+                // Paralēli: Ticketmaster pēc ģeolokācijas + Biļešu Paradīze; apvieno un kārtot pēc datuma.
+                const [ticketmaster, bilesu] = await Promise.all([
+                    fetchConcerts({ keyword: 'rock', latlong: location.coords }),
+                    fetchBilesuParadizeConcerts(),
+                ]);
+
+                const merged = [...bilesu, ...ticketmaster].sort((a, b) =>
+                    getConcertSortDate(a).localeCompare(getConcertSortDate(b))
+                );
 
                 if (isMounted) {
-                    setEvents(data);
+                    setEvents(merged);
                     setLoading(false);
                 }
             } catch (error) {
@@ -43,7 +50,6 @@ export default function HomeScreen() {
         return () => { isMounted = false; };
     }, []);
 
-    // Rāda ielādes indikatoru, kamēr dati tiek ielādēti
     if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -52,7 +58,6 @@ export default function HomeScreen() {
         );
     }
 
-    // Ja nav atrasti koncerti
     if (events.length === 0) {
         return (
             <View style={styles.container}>
@@ -61,7 +66,6 @@ export default function HomeScreen() {
         );
     }
 
-    // Rāda koncertu sarakstu
     return (
         <View style={styles.container}>
             <FlatList
