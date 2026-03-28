@@ -1,5 +1,4 @@
-import { Text, TouchableOpacity, FlatList } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, TouchableOpacity, FlatList, View } from "react-native";
 import styles from "../styles/DiscoveryScreenStyles";
 
 const GENRES = [
@@ -7,10 +6,15 @@ const GENRES = [
     { id: "pop", label: "Pop" },
     { id: "hiphop", label: "Hip-Hop" },
     { id: "jazz", label: "Jazz" },
+    { id: "blues", label: "Blues" },
     { id: "metal", label: "Metal" },
     { id: "country", label: "Country" },
+    { id: "folk", label: "Folk" },
     { id: "edm", label: "EDM" },
     { id: "classical", label: "Classical" },
+    { id: "opera", label: "Opera" },
+    { id: "schlager", label: "Schlager" },
+    { id: "gospel", label: "Gospel" },
 ];
 
 export default function DiscoveryScreen({ navigation }) {
@@ -20,6 +24,7 @@ export default function DiscoveryScreen({ navigation }) {
             onPress={() =>
                 navigation.navigate("GenreResults", {
                     genre: item.label,
+                    genreId: item.id,
                 })
             }
         >
@@ -28,7 +33,7 @@ export default function DiscoveryScreen({ navigation }) {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <FlatList
                 data={GENRES}
                 numColumns={2}
@@ -37,6 +42,6 @@ export default function DiscoveryScreen({ navigation }) {
                 columnWrapperStyle={{ justifyContent: "space-between" }}
                 contentContainerStyle={styles.list}
             />
-        </SafeAreaView>
+        </View>
     );
 }
