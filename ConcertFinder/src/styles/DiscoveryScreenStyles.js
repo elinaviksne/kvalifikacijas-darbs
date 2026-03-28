@@ -4,12 +4,13 @@ export default StyleSheet.create({
     container: {
         flex: 1,
         width: "100%",
-        backgroundColor: "#000",
-        padding: 16,
+        backgroundColor: "#111",
+        paddingHorizontal: 20,
     },
 
     list: {
-        paddingBottom: 20,
+        paddingTop: 40,
+        paddingBottom: 40,
     },
 
     genreBox: {
