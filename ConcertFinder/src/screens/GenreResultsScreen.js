@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { View, FlatList, ActivityIndicator } from "react-native";
-import ConcertCard from "../components/ConcertCard";
-import { fetchConcerts } from "../services/ConcertService";
+import ConcertCard, { getConcertSortDate } from "../components/ConcertCard";
+import {
+    fetchConcerts,
+    fetchBilesuParadizeForGenre,
+    genreIdFromLabel,
+} from "../services/ConcertService";
 import styles from "../styles/HomeScreenStyles";
 
 export default function GenreResultsScreen({ route }) {
-    const { genre } = route.params;
+    const { genre, genreId: genreIdParam } = route.params;
+    const genreId = genreIdParam ?? genreIdFromLabel(genre);
 
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -17,10 +22,15 @@ export default function GenreResultsScreen({ route }) {
         setEvents([]);
 
         async function loadGenreEvents() {
-            // Ticketmaster: meklēšana pēc izvēlētā žanra nosaukuma (atslēgvārds).
-            const data = await fetchConcerts({ keyword: genre });
+            const [ticketmaster, bilesu] = await Promise.all([
+                fetchConcerts({ keyword: genre }),
+                fetchBilesuParadizeForGenre(genreId),
+            ]);
+            const merged = [...bilesu, ...ticketmaster].sort((a, b) =>
+                getConcertSortDate(a).localeCompare(getConcertSortDate(b))
+            );
             if (isMounted) {
-                setEvents(data);
+                setEvents(merged);
                 setLoading(false);
             }
         }
@@ -28,7 +38,7 @@ export default function GenreResultsScreen({ route }) {
         loadGenreEvents();
 
         return () => { isMounted = false; };
-    }, [genre]);
+    }, [genre, genreId]);
 
     if (loading) {
         return (
