@@ -1,4 +1,4 @@
-import { fetchConcerts } from '../services/ConcertService';
+import { fetchConcerts, fetchBilesuParadizeConcerts } from '../services/ConcertService';
 
 globalThis.fetch = require('jest-fetch-mock');
 
@@ -6,7 +6,6 @@ beforeEach(() => {
     fetch.resetMocks();
 });
 
-// Mock API response with one concert
 const mockApiResponse = {
     _embedded: {
         events: [
@@ -22,7 +21,6 @@ const mockApiResponse = {
     }
 };
 
-// Test: fetchConcerts returns mapped events correctly with city
 test('fetchConcerts returns mapped events correctly with city', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
 
@@ -42,7 +40,6 @@ test('fetchConcerts returns mapped events correctly with city', async () => {
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining('city=New%20York'));
 });
 
-// Test: fetchConcerts returns mapped events correctly with latlong
 test('fetchConcerts returns mapped events correctly with latlong', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
     const latlong = { latitude: 40.7128, longitude: -74.0060 };
@@ -57,7 +54,6 @@ test('fetchConcerts returns mapped events correctly with latlong', async () => {
     );
 });
 
-// Test: returns empty array if no events
 test('fetchConcerts returns empty array if no events', async () => {
     fetch.mockResponseOnce(JSON.stringify({}));
 
@@ -66,7 +62,6 @@ test('fetchConcerts returns empty array if no events', async () => {
     expect(concerts).toEqual([]);
 });
 
-// Test: handles fetch errors gracefully
 test('fetchConcerts handles fetch errors gracefully', async () => {
     fetch.mockRejectOnce(new Error('Network error'));
 
@@ -75,7 +70,6 @@ test('fetchConcerts handles fetch errors gracefully', async () => {
     expect(concerts).toEqual([]);
 });
 
-// Test: default keyword is "rock"
 test('fetchConcerts defaults keyword to "rock"', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
 
@@ -84,12 +78,11 @@ test('fetchConcerts defaults keyword to "rock"', async () => {
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining('keyword=rock'));
 });
 
-// Test: events missing required fields are filtered out
 test('fetchConcerts filters events missing required fields', async () => {
     const incompleteResponse = {
         _embedded: {
             events: [
-                { id: '2', name: 'Jazz Night', dates: { start: { localDate: '2025-11-20' } } } // missing venue, url, images
+                { id: '2', name: 'Jazz Night', dates: { start: { localDate: '2025-11-20' } } },
             ]
         }
     };
@@ -97,11 +90,9 @@ test('fetchConcerts filters events missing required fields', async () => {
 
     const concerts = await fetchConcerts({ keyword: 'jazz' });
 
-    // Event should be filtered out
     expect(concerts).toEqual([]);
 });
 
-// Test: maps multiple events correctly
 test('fetchConcerts maps multiple events correctly', async () => {
     const multiEventResponse = {
         _embedded: {
@@ -131,4 +122,36 @@ test('fetchConcerts maps multiple events correctly', async () => {
         url: 'https://ticketmaster.com/event/2',
         image: 'https://image.url/2.jpg'
     });
+});
+
+test('fetchBilesuParadizeConcerts merges venue repertoires with stable ids', async () => {
+    const bpEvent = {
+        id: 999,
+        urls: { en: 'https://www.bilesuparadize.lv/en/event/999' },
+        dateTime: '2026-04-01T19:00:00',
+        performance: {
+            titles: { en: 'Riga Live', lv: 'Rīga' },
+            posterImageUrls: { lv: 'https://media.bilesuparadize.lv/poster.jpg' },
+        },
+        hall: { address: 'Rīga, Example 1', titles: { en: 'Main Hall' } },
+        venue: { id: 54, titles: {} },
+    };
+    fetch.mockResponseOnce(JSON.stringify([bpEvent]));
+    fetch.mockResponseOnce(JSON.stringify([]));
+
+    const concerts = await fetchBilesuParadizeConcerts({ venueIds: [54, 720], maxTotal: 10 });
+
+    expect(concerts).toHaveLength(1);
+    expect(concerts[0].id).toBe('bp-999');
+    expect(concerts[0].performance.titles.en).toBe('Riga Live');
+    expect(fetch).toHaveBeenCalledWith('https://www.bilesuparadize.lv/api/venue/54/repertoire');
+    expect(fetch).toHaveBeenCalledWith('https://www.bilesuparadize.lv/api/venue/720/repertoire');
+});
+
+test('fetchBilesuParadizeConcerts returns empty array on error', async () => {
+    fetch.mockRejectOnce(new Error('fail'));
+
+    const concerts = await fetchBilesuParadizeConcerts({ venueIds: [1] });
+
+    expect(concerts).toEqual([]);
 });
