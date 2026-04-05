@@ -1,24 +1,28 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeStackNavigator from "./HomeStackNavigator";
 import DiscoveryStackNavigator from "./DiscoveryStackNavigator";
+import { TAB_BAR_BACKGROUND } from "../constants/layout";
 
 const Tab = createBottomTabNavigator();
 
 export default function AppNavigator() {
+    const insets = useSafeAreaInsets();
+
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarStyle: {
-                    backgroundColor: "#222",
+                    backgroundColor: TAB_BAR_BACKGROUND,
                     borderTopWidth: 0,
-                    height: 60,
-                    paddingBottom: 0,
+                    paddingTop: 8,
+                    paddingBottom: Math.max(insets.bottom, 10),
+                    minHeight: 52 + insets.bottom,
                 },
                 tabBarActiveTintColor: "#FF6F00",
                 tabBarInactiveTintColor: "#888",
-                tabBarSafeAreaInsets: { bottom: 0 },
                 tabBarIcon: ({ color, size }) => {
                     let iconName;
                     if (route.name === "HomeTab") iconName = "home";

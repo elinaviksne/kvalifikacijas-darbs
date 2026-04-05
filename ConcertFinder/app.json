@@ -20,7 +20,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "navigationBar": {
+        "backgroundColor": "#222222",
+        "barStyle": "light-content"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

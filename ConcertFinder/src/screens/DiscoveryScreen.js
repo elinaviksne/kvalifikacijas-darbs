@@ -1,4 +1,5 @@
 import { Text, TouchableOpacity, FlatList, View } from "react-native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import styles from "../styles/DiscoveryScreenStyles";
 
 const GENRES = [
@@ -18,6 +19,8 @@ const GENRES = [
 ];
 
 export default function DiscoveryScreen({ navigation }) {
+    const tabBarHeight = useBottomTabBarHeight();
+
     const renderGenre = ({ item }) => (
         <TouchableOpacity
             style={styles.genreBox}
@@ -40,7 +43,7 @@ export default function DiscoveryScreen({ navigation }) {
                 keyExtractor={(item) => item.id}
                 renderItem={renderGenre}
                 columnWrapperStyle={{ justifyContent: "space-between" }}
-                contentContainerStyle={styles.list}
+                contentContainerStyle={[styles.list, { paddingBottom: 32 + tabBarHeight }]}
             />
         </View>
     );
