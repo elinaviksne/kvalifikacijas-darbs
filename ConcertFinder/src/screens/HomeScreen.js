@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, FlatList, ActivityIndicator, Text } from "react-native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Location from "expo-location";
 import ConcertCard, { getConcertSortDate } from "../components/ConcertCard";
 import { fetchConcerts, fetchBilesuParadizeConcerts } from "../services/ConcertService";
@@ -8,6 +9,7 @@ import styles from "../styles/HomeScreenStyles";
 export default function HomeScreen() {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const tabBarHeight = useBottomTabBarHeight();
 
     useEffect(() => {
         let isMounted = true;
@@ -17,20 +19,26 @@ export default function HomeScreen() {
             setEvents([]);
 
             try {
+                // BP neprasa atrašanās vietu — sākt tūlīt, kamēr gaida atļauju un GPS.
+                const bilesuPromise = fetchBilesuParadizeConcerts();
+
                 const { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
+                let ticketmaster = [];
+                if (status === 'granted') {
+                    let coords = null;
+                    const last = await Location.getLastKnownPositionAsync({ maxAge: 300_000 });
+                    if (last?.coords) {
+                        coords = last.coords;
+                    } else {
+                        const location = await Location.getCurrentPositionAsync({});
+                        coords = location.coords;
+                    }
+                    ticketmaster = await fetchConcerts({ keyword: 'rock', latlong: coords });
+                } else {
                     console.warn("Location permission denied");
-                    setLoading(false);
-                    return;
                 }
 
-                const location = await Location.getCurrentPositionAsync({});
-                // Paralēli: Ticketmaster pēc ģeolokācijas + Biļešu Paradīze; apvieno un kārtot pēc datuma.
-                const [ticketmaster, bilesu] = await Promise.all([
-                    fetchConcerts({ keyword: 'rock', latlong: location.coords }),
-                    fetchBilesuParadizeConcerts(),
-                ]);
-
+                const bilesu = await bilesuPromise;
                 const merged = [...bilesu, ...ticketmaster].sort((a, b) =>
                     getConcertSortDate(a).localeCompare(getConcertSortDate(b))
                 );
@@ -72,7 +80,7 @@ export default function HomeScreen() {
                 data={events}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => <ConcertCard item={item} />}
-                contentContainerStyle={styles.list}
+                contentContainerStyle={[styles.list, { paddingBottom: 32 + tabBarHeight }]}
                 initialNumToRender={5}
                 maxToRenderPerBatch={10}
                 windowSize={5}

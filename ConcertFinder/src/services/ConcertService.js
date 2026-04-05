@@ -4,6 +4,30 @@ const BASE_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
 const BILESU_API = "https://www.bilesuparadize.lv/api";
 const BILESU_VENUE_IDS = [54, 720];
 
+/** Īslaicīgs kešs, lai žanru un sākumlapas pieprasījumi neatkārtotu to pašu venue /repertoire. */
+const BILESU_REPERTOIRE_TTL_MS = 5 * 60 * 1000;
+const bilesuRepertoireCache = new Map();
+
+export function clearBilesuRepertoireCache() {
+    bilesuRepertoireCache.clear();
+}
+
+async function fetchBilesuVenueRepertoire(venueId) {
+    const now = Date.now();
+    const hit = bilesuRepertoireCache.get(venueId);
+    if (hit && now - hit.ts < BILESU_REPERTOIRE_TTL_MS) {
+        return hit.data;
+    }
+    const r = await fetch(`${BILESU_API}/venue/${venueId}/repertoire`);
+    if (!r.ok) {
+        return [];
+    }
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : [];
+    bilesuRepertoireCache.set(venueId, { data: list, ts: now });
+    return list;
+}
+
 /** Vietas žanru pārlūkam — plašāks Rīgas kultūras norišu loks. */
 const BILESU_GENRE_VENUE_IDS = [
     54, 720, 11, 28, 67, 10, 1927, 38, 2267, 1159, 360, 1589, 701,
@@ -12,11 +36,37 @@ const BILESU_GENRE_VENUE_IDS = [
 const GENRE_MATCHERS = {
     rock: [/rock/i, /punk/i, /indie/i, /grunge/i, /alternative/i],
     pop: [/pop/i, /disco/i],
-    hiphop: [/hip[\s-]?hop/i, /\brap\b/i, /\btrap\b/i, /hiphop/i],
+    hiphop: [
+        /hip[\s-]?hop/i,
+        /\brap\b/i,
+        /\btrap\b/i,
+        /hiphop/i,
+        /\bdrill\b/i,
+        /\br\s*&\s*b\b/i,
+        /\brnb\b/i,
+        /\br&b\b/i,
+        /рэп/i,
+        /\brepa\b/i,
+    ],
     jazz: [/jazz/i],
     metal: [/metal/i, /heavy\s*metal/i],
     country: [/country/i, /bluegrass/i],
-    edm: [/electronic/i, /\bedm\b/i, /techno/i, /\bhouse\b/i, /trance/i, /dubstep/i],
+    edm: [
+        /electronic/i,
+        /\bedm\b/i,
+        /techno/i,
+        /\bhouse\b/i,
+        /trance/i,
+        /dubstep/i,
+        /\belectro\b/i,
+        /\bdnb\b/i,
+        /drum\s*(?:&|and)\s*bass/i,
+        /\bjungle\b/i,
+        /breakbeat/i,
+        /hardstyle/i,
+        /ambient/i,
+        /\buk\s*garage\b/i,
+    ],
     classical: [
         /classic\s+music/i,
         /chamber/i,
@@ -55,6 +105,80 @@ export function genreIdFromLabel(label) {
     return GENRE_LABEL_TO_ID[label] ?? null;
 }
 
+/**
+ * Ticketmaster atslēgvārdi pēc žanra — labāka atbilstība nekā viens UI etiķetes vārds (piem., „EDM” → electronic).
+ */
+const GENRE_ID_TO_TICKETMASTER_KEYWORDS = {
+    rock: ["rock", "alternative rock", "indie rock"],
+    pop: ["pop", "dance pop"],
+    hiphop: ["hip hop", "rap", "hiphop"],
+    jazz: ["jazz"],
+    metal: ["metal", "heavy metal"],
+    country: ["country", "country music"],
+    folk: ["folk", "world music"],
+    edm: ["electronic", "edm", "techno"],
+    classical: ["classical", "orchestra", "symphony"],
+    opera: ["opera", "operetta"],
+    schlager: ["schlager"],
+    blues: ["blues", "rhythm and blues"],
+    gospel: ["gospel", "spiritual"],
+};
+
+export function ticketmasterKeywordsForGenreId(genreId, displayLabelFallback = "music") {
+    if (genreId && GENRE_ID_TO_TICKETMASTER_KEYWORDS[genreId]?.length) {
+        return GENRE_ID_TO_TICKETMASTER_KEYWORDS[genreId];
+    }
+    const label = typeof displayLabelFallback === "string" && displayLabelFallback.trim()
+        ? displayLabelFallback.trim()
+        : "music";
+    return [label];
+}
+
+function mergeTicketmasterEventsById(batches) {
+    const seen = new Set();
+    const out = [];
+    for (const batch of batches) {
+        if (!Array.isArray(batch)) continue;
+        for (const e of batch) {
+            if (!e?.id || seen.has(e.id)) continue;
+            seen.add(e.id);
+            out.push(e);
+        }
+    }
+    out.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    return out;
+}
+
+/**
+ * Vairāki TM meklējumi pēc žanram (atslēgvārdi + ģeogrāfija), apvieno un deduplicē pēc id.
+ * Ja ir latlong: meklē gan ap lietotāju (radius), gan Rīgā — lai nepalaistu garām pilsētas notikumus.
+ */
+export async function fetchTicketmasterGenreConcerts(
+    genreId,
+    displayLabel,
+    { latlong, radius = 250, cityFallback = "Riga" } = {}
+) {
+    const keywords = ticketmasterKeywordsForGenreId(genreId, displayLabel);
+    const geoModes = latlong
+        ? [{ latlong, radius }, { city: cityFallback }]
+        : [{ city: cityFallback }];
+
+    const tasks = [];
+    for (const geo of geoModes) {
+        for (const keyword of keywords) {
+            tasks.push(fetchConcerts({ keyword, ...geo }));
+        }
+    }
+
+    try {
+        const batches = await Promise.all(tasks);
+        return mergeTicketmasterEventsById(batches);
+    } catch (error) {
+        console.error("Error fetching Ticketmaster genre concerts:", error);
+        return [];
+    }
+}
+
 function bilesuCategoryAndTitleText(event) {
     const parts = [];
     const p = event.performance;
@@ -85,31 +209,46 @@ export function bilesuEventMatchesGenre(event, genreId) {
  */
 export async function fetchBilesuParadizeForGenre(
     genreId,
-    { venueIds = BILESU_GENRE_VENUE_IDS, maxTotal = 60 } = {}
+    { venueIds = BILESU_GENRE_VENUE_IDS, maxTotal = 60, onPartial } = {}
 ) {
     if (!genreId || !GENRE_MATCHERS[genreId]) return [];
 
     try {
-        const lists = await Promise.all(
-            venueIds.map((id) =>
-                fetch(`${BILESU_API}/venue/${id}/repertoire`).then((r) => (r.ok ? r.json() : []))
-            )
-        );
         const seen = new Set();
         const matched = [];
-        for (const list of lists) {
-            if (!Array.isArray(list)) continue;
+
+        const ingestList = (list) => {
+            if (!Array.isArray(list)) return false;
             for (const e of list) {
                 if (!e?.id || seen.has(e.id)) continue;
                 seen.add(e.id);
                 if (!bilesuEventMatchesGenre(e, genreId)) continue;
                 matched.push({ ...e, id: `bp-${e.id}` });
-                if (matched.length >= maxTotal) {
-                    matched.sort((a, b) => (a.dateTime || "").localeCompare(b.dateTime || ""));
-                    return matched;
-                }
+                if (matched.length >= maxTotal) return true;
             }
-        }
+            return false;
+        };
+
+        const emitPartial = () => {
+            if (!onPartial) return;
+            const copy = [...matched].sort((a, b) =>
+                (a.dateTime || "").localeCompare(b.dateTime || "")
+            );
+            onPartial(copy);
+        };
+
+        await Promise.all(
+            venueIds.map((id) =>
+                fetchBilesuVenueRepertoire(id).then((list) => {
+                    if (ingestList(list)) {
+                        emitPartial();
+                        return;
+                    }
+                    emitPartial();
+                })
+            )
+        );
+
         matched.sort((a, b) => (a.dateTime || "").localeCompare(b.dateTime || ""));
         return matched;
     } catch (error) {
@@ -124,11 +263,7 @@ export async function fetchBilesuParadizeForGenre(
  */
 export async function fetchBilesuParadizeConcerts({ venueIds = BILESU_VENUE_IDS, maxTotal = 24 } = {}) {
     try {
-        const lists = await Promise.all(
-            venueIds.map((id) =>
-                fetch(`${BILESU_API}/venue/${id}/repertoire`).then((r) => (r.ok ? r.json() : []))
-            )
-        );
+        const lists = await Promise.all(venueIds.map((id) => fetchBilesuVenueRepertoire(id)));
         const seen = new Set();
         const out = [];
         for (const list of lists) {
@@ -153,7 +288,7 @@ export async function fetchBilesuParadizeConcerts({ venueIds = BILESU_VENUE_IDS,
  */
 export async function fetchConcerts({ keyword = "rock", city, latlong, radius = 250 } = {}) {
     try {
-        let url = `${BASE_URL}?apikey=${API_KEY}&keyword=${keyword}`;
+        let url = `${BASE_URL}?apikey=${API_KEY}&keyword=${encodeURIComponent(keyword)}`;
 
         if (city) {
             url += `&city=${encodeURIComponent(city)}`;

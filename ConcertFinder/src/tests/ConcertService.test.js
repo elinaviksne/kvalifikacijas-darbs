@@ -4,12 +4,16 @@ import {
     bilesuEventMatchesGenre,
     genreIdFromLabel,
     fetchBilesuParadizeForGenre,
+    clearBilesuRepertoireCache,
+    ticketmasterKeywordsForGenreId,
+    fetchTicketmasterGenreConcerts,
 } from '../services/ConcertService';
 
 globalThis.fetch = require('jest-fetch-mock');
 
 beforeEach(() => {
     fetch.resetMocks();
+    clearBilesuRepertoireCache();
 });
 
 const mockApiResponse = {
@@ -168,6 +172,37 @@ test('genreIdFromLabel maps Discovery labels', () => {
     expect(genreIdFromLabel('Unknown')).toBeNull();
 });
 
+test('ticketmasterKeywordsForGenreId maps edm and hip-hop to broader TM terms', () => {
+    expect(ticketmasterKeywordsForGenreId('edm')).toEqual(['electronic', 'edm', 'techno']);
+    expect(ticketmasterKeywordsForGenreId('hiphop')).toContain('hip hop');
+    expect(ticketmasterKeywordsForGenreId('hiphop')).toContain('rap');
+    expect(ticketmasterKeywordsForGenreId(null, 'Weird')).toEqual(['Weird']);
+});
+
+test('fetchTicketmasterGenreConcerts merges keyword batches and dedupes by id', async () => {
+    const ev = mockApiResponse._embedded.events[0];
+    const body = JSON.stringify(mockApiResponse);
+    fetch.mockResponse(body);
+    fetch.mockResponse(body);
+    fetch.mockResponse(JSON.stringify({ _embedded: { events: [] } }));
+
+    const out = await fetchTicketmasterGenreConcerts('jazz', 'Jazz', {
+        cityFallback: 'Riga',
+    });
+
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe('1');
+    expect(fetch.mock.calls.length).toBe(3);
+});
+
+test('fetchConcerts encodes multi-word keyword in URL', async () => {
+    fetch.mockResponseOnce(JSON.stringify({}));
+
+    await fetchConcerts({ keyword: 'hip hop', city: 'Riga' });
+
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('keyword=hip%20hop'));
+});
+
 test('bilesuEventMatchesGenre uses categories and titles', () => {
     const rockPop = {
         performance: {
@@ -194,6 +229,22 @@ test('bilesuEventMatchesGenre uses categories and titles', () => {
         },
     };
     expect(bilesuEventMatchesGenre(titleRap, 'hiphop')).toBe(true);
+
+    const drillTitle = {
+        performance: {
+            categories: [{ en: 'Concerts' }],
+            titles: { en: 'UK Drill Night' },
+        },
+    };
+    expect(bilesuEventMatchesGenre(drillTitle, 'hiphop')).toBe(true);
+
+    const dnbCat = {
+        performance: {
+            categories: [{ en: 'DNB / Bass' }],
+            titles: { en: 'Club night' },
+        },
+    };
+    expect(bilesuEventMatchesGenre(dnbCat, 'edm')).toBe(true);
 });
 
 test('fetchBilesuParadizeForGenre filters and caps results', async () => {
