@@ -4,6 +4,9 @@ const BASE_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
 const BILESU_API = "https://www.bilesuparadize.lv/api";
 const BILESU_VENUE_IDS = [54, 720];
 
+/** Ticketmaster žanru meklējumiem — vairāk ierakstu vienā atbildē (Discovery API `size`). */
+const GENRE_TICKETMASTER_PAGE_SIZE = 40;
+
 /** Īslaicīgs kešs, lai žanru un sākumlapas pieprasījumi neatkārtotu to pašu venue /repertoire. */
 const BILESU_REPERTOIRE_TTL_MS = 5 * 60 * 1000;
 const bilesuRepertoireCache = new Map();
@@ -119,9 +122,9 @@ const GENRE_ID_TO_TICKETMASTER_KEYWORDS = {
     edm: ["electronic", "edm", "techno"],
     classical: ["classical", "orchestra", "symphony"],
     opera: ["opera", "operetta"],
-    schlager: ["schlager"],
+    schlager: ["schlager", "volksmusik", "traditional pop"],
     blues: ["blues", "rhythm and blues"],
-    gospel: ["gospel", "spiritual"],
+    gospel: ["gospel", "spiritual", "choir"],
 };
 
 export function ticketmasterKeywordsForGenreId(genreId, displayLabelFallback = "music") {
@@ -150,23 +153,38 @@ function mergeTicketmasterEventsById(batches) {
 }
 
 /**
- * Vairāki TM meklējumi pēc žanram (atslēgvārdi + ģeogrāfija), apvieno un deduplicē pēc id.
- * Ja ir latlong: meklē gan ap lietotāju (radius), gan Rīgā — lai nepalaistu garām pilsētas notikumus.
+ * Vairāki TM meklējumi pēc žanram — Baltijas valstis + Rīga + tikai atslēgvārds (globāla meklēšana),
+ * lai retiem žanriem būtu rezultāti, ne tikai LV. Nav GPS.
+ * `geoModes` var pārrakstīt testiem.
  */
 export async function fetchTicketmasterGenreConcerts(
     genreId,
     displayLabel,
-    { latlong, radius = 250, cityFallback = "Riga" } = {}
+    {
+        geoModes: geoModesOverride,
+        cityFallback = "Riga",
+        countryCode = "LV",
+    } = {}
 ) {
     const keywords = ticketmasterKeywordsForGenreId(genreId, displayLabel);
-    const geoModes = latlong
-        ? [{ latlong, radius }, { city: cityFallback }]
-        : [{ city: cityFallback }];
+    const geoModes = geoModesOverride ?? [
+        { countryCode },
+        { city: cityFallback, countryCode },
+        { countryCode: "EE" },
+        { countryCode: "LT" },
+        {},
+    ];
 
     const tasks = [];
     for (const geo of geoModes) {
         for (const keyword of keywords) {
-            tasks.push(fetchConcerts({ keyword, ...geo }));
+            tasks.push(
+                fetchConcerts({
+                    keyword,
+                    ...geo,
+                    size: GENRE_TICKETMASTER_PAGE_SIZE,
+                })
+            );
         }
     }
 
@@ -283,10 +301,17 @@ export async function fetchBilesuParadizeConcerts({ venueIds = BILESU_VENUE_IDS,
 }
 
 /**
- * Ticketmaster Discovery API — notikumu meklēšana pēc atslēgvārda un (pēc izvēles) pilsētas vai koordinātām.
+ * Ticketmaster Discovery API — notikumu meklēšana pēc atslēgvārda un (pēc izvēles) pilsētas, valsts koda vai koordinātām.
  * Atgriež vienotu masīvu kartītēm: id, name, date, venue, url, image.
  */
-export async function fetchConcerts({ keyword = "rock", city, latlong, radius = 250 } = {}) {
+export async function fetchConcerts({
+    keyword = "rock",
+    city,
+    latlong,
+    radius = 250,
+    countryCode,
+    size,
+} = {}) {
     try {
         let url = `${BASE_URL}?apikey=${API_KEY}&keyword=${encodeURIComponent(keyword)}`;
 
@@ -294,6 +319,13 @@ export async function fetchConcerts({ keyword = "rock", city, latlong, radius = 
             url += `&city=${encodeURIComponent(city)}`;
         } else if (latlong) {
             url += `&latlong=${latlong.latitude},${latlong.longitude}&radius=${radius}`;
+        }
+        if (countryCode) {
+            url += `&countryCode=${encodeURIComponent(countryCode)}`;
+        }
+        if (size != null && Number.isFinite(size) && size > 0) {
+            const capped = Math.min(Math.floor(size), 200);
+            url += `&size=${capped}`;
         }
 
         const response = await fetch(url);
