@@ -7,7 +7,6 @@ import {
     RefreshControl,
 } from "react-native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import * as Location from "expo-location";
 import ConcertCard, { getConcertSortDate } from "../components/ConcertCard";
 import {
     fetchBilesuParadizeForGenre,
@@ -21,9 +20,6 @@ function mergeByDate(bilesu, ticketmaster) {
         getConcertSortDate(a).localeCompare(getConcertSortDate(b))
     );
 }
-
-/** Ticketmaster — Rīga kā rezerves meklējums, ja nav ģeolokācijas vai papildus apvienošanai ar radius. */
-const TICKETMASTER_GENRE_CITY = "Riga";
 
 const REFRESH_COLORS = ["#FF6F00"];
 
@@ -83,27 +79,7 @@ export default function GenreResultsScreen({ route }) {
                 }
             };
 
-            (async () => {
-                let latlong = null;
-                try {
-                    const { status } = await Location.requestForegroundPermissionsAsync();
-                    if (status === "granted") {
-                        const last = await Location.getLastKnownPositionAsync({ maxAge: 300_000 });
-                        if (last?.coords) {
-                            latlong = last.coords;
-                        } else {
-                            const loc = await Location.getCurrentPositionAsync({});
-                            latlong = loc.coords;
-                        }
-                    }
-                } catch {
-                    /* ignore */
-                }
-                return fetchTicketmasterGenreConcerts(genreId, genre, {
-                    latlong,
-                    cityFallback: TICKETMASTER_GENRE_CITY,
-                });
-            })()
+            fetchTicketmasterGenreConcerts(genreId, genre)
                 .then((tm) => {
                     if (isStale()) return;
                     latestTicketmaster = tm;
