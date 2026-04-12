@@ -180,14 +180,13 @@ test('ticketmasterKeywordsForGenreId maps edm and hip-hop to broader TM terms', 
 });
 
 test('fetchTicketmasterGenreConcerts merges keyword batches and dedupes by id', async () => {
-    const ev = mockApiResponse._embedded.events[0];
     const body = JSON.stringify(mockApiResponse);
     fetch.mockResponse(body);
     fetch.mockResponse(body);
-    fetch.mockResponse(JSON.stringify({ _embedded: { events: [] } }));
+    fetch.mockResponse(body);
 
-    const out = await fetchTicketmasterGenreConcerts('jazz', 'Jazz', {
-        cityFallback: 'Riga',
+    const out = await fetchTicketmasterGenreConcerts('rock', 'Rock', {
+        geoModes: [{ city: 'Riga' }],
     });
 
     expect(out).toHaveLength(1);
