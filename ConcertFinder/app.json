@@ -12,6 +12,15 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "androidNavigationBar": {
+      "backgroundColor": "#222222",
+      "barStyle": "light-content",
+      "enforceContrast": false
+    },
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#222222"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -21,10 +30,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "navigationBar": {
-        "backgroundColor": "#222222",
-        "barStyle": "light-content"
-      }
+      "package": "com.elina.viksne.concertfinder"
     },
     "web": {
       "favicon": "./assets/favicon.png"
