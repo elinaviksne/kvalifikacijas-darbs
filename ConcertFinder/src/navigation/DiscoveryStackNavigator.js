@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { STACK_HEADER_TITLE_TEXT_STYLE } from "../constants/layout";
 import DiscoveryScreen from "../screens/DiscoveryScreen";
 import GenreResultsScreen from "../screens/GenreResultsScreen";
 
@@ -10,17 +11,18 @@ export default function DiscoveryStackNavigator() {
             screenOptions={{
                 headerStyle: {
                     backgroundColor: "#222",
-                    borderBottomColor: 'transparent'
+                    borderBottomColor: "transparent",
                 },
                 headerTintColor: "#FF6F00",
                 headerTitleAlign: "center",
-                headerHideShadow: true
+                headerTitleStyle: STACK_HEADER_TITLE_TEXT_STYLE,
+                headerShadowVisible: false,
             }}
         >
             <Stack.Screen
                 name="DiscoveryMain"
                 component={DiscoveryScreen}
-                options={{ title: "Discover" }}
+                options={{ headerShown: false }}
             />
 
             <Stack.Screen

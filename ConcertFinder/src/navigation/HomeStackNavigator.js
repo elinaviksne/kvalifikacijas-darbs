@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { STACK_HEADER_TITLE_TEXT_STYLE } from "../constants/layout";
 import HomeScreen from "../screens/HomeScreen";
 
 const Stack = createNativeStackNavigator();
@@ -13,6 +14,7 @@ export default function HomeStackNavigator() {
                 },
                 headerTintColor: "#FF6F00",
                 headerTitleAlign: "center",
+                headerTitleStyle: STACK_HEADER_TITLE_TEXT_STYLE,
                 headerShadowVisible: false,
             }}
         >

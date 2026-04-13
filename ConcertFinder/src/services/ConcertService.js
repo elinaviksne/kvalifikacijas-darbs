@@ -108,6 +108,18 @@ export function genreIdFromLabel(label) {
     return GENRE_LABEL_TO_ID[label] ?? null;
 }
 
+/** Meklēšanai: ja ievade atbilst žanra nosaukumam vai id, var atvērt žanru rezultātus. */
+export function findDiscoveryGenreRoute(query) {
+    const q = (query || "").trim().toLowerCase();
+    if (!q) return null;
+    for (const [label, id] of Object.entries(GENRE_LABEL_TO_ID)) {
+        if (label.toLowerCase() === q || id === q) {
+            return { genre: label, genreId: id };
+        }
+    }
+    return null;
+}
+
 /**
  * Ticketmaster atslēgvārdi pēc žanra — labāka atbilstība nekā viens UI etiķetes vārds (piem., „EDM” → electronic).
  */
@@ -304,6 +316,116 @@ export async function fetchBilesuParadizeConcerts({ venueIds = BILESU_VENUE_IDS,
  * Ticketmaster Discovery API — notikumu meklēšana pēc atslēgvārda un (pēc izvēles) pilsētas, valsts koda vai koordinātām.
  * Atgriež vienotu masīvu kartītēm: id, name, date, venue, url, image.
  */
+const SEARCH_DISCOVERY_TM_SIZE = 36;
+const SEARCH_DISCOVERY_BP_VENUE_COUNT = 14;
+
+function sortDiscoveryDateKey(item) {
+    if (typeof item.id === "string" && item.id.startsWith("bp-")) {
+        return item.dateTime?.slice(0, 10) || "";
+    }
+    return item.date || "";
+}
+
+function bilesuTextSearchHaystack(event) {
+    const parts = [];
+    const p = event.performance;
+    if (p?.titles) {
+        if (p.titles.en) parts.push(p.titles.en);
+        if (p.titles.lv) parts.push(p.titles.lv);
+        if (p.titles.ru) parts.push(p.titles.ru);
+    }
+    if (p?.categories?.length) {
+        for (const c of p.categories) {
+            if (c.en) parts.push(c.en);
+            if (c.lv) parts.push(c.lv);
+            if (c.ru) parts.push(c.ru);
+        }
+    }
+    if (event.venue?.titles) {
+        const v = event.venue.titles;
+        if (v.en) parts.push(v.en);
+        if (v.lv) parts.push(v.lv);
+    }
+    return parts.join(" \n ").toLowerCase();
+}
+
+/**
+ * Biļešu Paradīze: meklē tekstu norišu nosaukumos / kategorijās (ierobežots venue skaits).
+ */
+export async function searchBilesuParadiseByQuery(query, { maxResults = 40 } = {}) {
+    const needle = (query || "").trim().toLowerCase();
+    if (needle.length < 2) return [];
+
+    const venueIds = BILESU_GENRE_VENUE_IDS.slice(0, SEARCH_DISCOVERY_BP_VENUE_COUNT);
+    try {
+        const lists = await Promise.all(venueIds.map((id) => fetchBilesuVenueRepertoire(id)));
+        const out = [];
+        const seen = new Set();
+        for (const list of lists) {
+            if (!Array.isArray(list)) continue;
+            for (const e of list) {
+                if (!e?.id || seen.has(e.id)) continue;
+                if (!bilesuTextSearchHaystack(e).includes(needle)) continue;
+                seen.add(e.id);
+                out.push({ ...e, id: `bp-${e.id}` });
+                if (out.length >= maxResults) return out;
+            }
+        }
+        return out;
+    } catch (error) {
+        console.error("Error searching Biļešu Paradīze:", error);
+        return [];
+    }
+}
+
+/**
+ * Meklēšana pēc nosaukuma / mākslinieka / vārda: Ticketmaster (LV + Rīga + globāli) + BP teksta filtrs.
+ * `mode`: all | event | genre | artist — šobrīd TM izmanto vienu `keyword` lauku; režīms rezervēts UI nākotnei.
+ */
+export async function searchDiscoveryConcerts(query, mode = "all") {
+    const q = (query || "").trim();
+    if (q.length < 2) return [];
+
+    const musicOnly = mode === "all" || mode === "event" || mode === "genre";
+    const tmOpts = (extra = {}) =>
+        musicOnly ? { ...extra, classificationName: "Music" } : extra;
+
+    try {
+        const [lv, riga, global, bp] = await Promise.all([
+            fetchConcerts(
+                tmOpts({
+                    keyword: q,
+                    countryCode: "LV",
+                    size: SEARCH_DISCOVERY_TM_SIZE,
+                })
+            ),
+            fetchConcerts(
+                tmOpts({
+                    keyword: q,
+                    city: "Riga",
+                    countryCode: "LV",
+                    size: SEARCH_DISCOVERY_TM_SIZE,
+                })
+            ),
+            fetchConcerts(
+                tmOpts({
+                    keyword: q,
+                    size: SEARCH_DISCOVERY_TM_SIZE,
+                })
+            ),
+            searchBilesuParadiseByQuery(q, { maxResults: 40 }),
+        ]);
+
+        const tm = mergeTicketmasterEventsById([lv, riga, global]);
+        const merged = [...tm, ...bp];
+        merged.sort((a, b) => sortDiscoveryDateKey(a).localeCompare(sortDiscoveryDateKey(b)));
+        return merged;
+    } catch (error) {
+        console.error("Error in searchDiscoveryConcerts:", error);
+        return [];
+    }
+}
+
 export async function fetchConcerts({
     keyword = "rock",
     city,
@@ -311,6 +433,7 @@ export async function fetchConcerts({
     radius = 250,
     countryCode,
     size,
+    classificationName,
 } = {}) {
     try {
         let url = `${BASE_URL}?apikey=${API_KEY}&keyword=${encodeURIComponent(keyword)}`;
@@ -322,6 +445,9 @@ export async function fetchConcerts({
         }
         if (countryCode) {
             url += `&countryCode=${encodeURIComponent(countryCode)}`;
+        }
+        if (classificationName) {
+            url += `&classificationName=${encodeURIComponent(classificationName)}`;
         }
         if (size != null && Number.isFinite(size) && size > 0) {
             const capped = Math.min(Math.floor(size), 200);
