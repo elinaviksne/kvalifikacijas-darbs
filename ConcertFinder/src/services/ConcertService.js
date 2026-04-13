@@ -153,11 +153,13 @@ function mergeTicketmasterEventsById(batches) {
     const seen = new Set();
     const out = [];
     for (const batch of batches) {
-        if (!Array.isArray(batch)) continue;
-        for (const e of batch) {
-            if (!e?.id || seen.has(e.id)) continue;
-            seen.add(e.id);
-            out.push(e);
+        if (Array.isArray(batch)) {
+            for (const e of batch) {
+                if (e?.id && !seen.has(e.id)) {
+                    seen.add(e.id);
+                    out.push(e);
+                }
+            }
         }
     }
     out.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
@@ -209,21 +211,26 @@ export async function fetchTicketmasterGenreConcerts(
     }
 }
 
+function appendBilesuLocalizedToParts(obj, parts, keys) {
+    if (!obj) return;
+    for (const key of keys) {
+        if (obj[key]) parts.push(obj[key]);
+    }
+}
+
+function appendBilesuCategoriesToParts(categories, parts) {
+    if (!categories?.length) return;
+    const keys = ["en", "lv", "ru"];
+    for (const c of categories) {
+        appendBilesuLocalizedToParts(c, parts, keys);
+    }
+}
+
 function bilesuCategoryAndTitleText(event) {
     const parts = [];
     const p = event.performance;
-    if (p?.categories?.length) {
-        for (const c of p.categories) {
-            if (c.en) parts.push(c.en);
-            if (c.lv) parts.push(c.lv);
-            if (c.ru) parts.push(c.ru);
-        }
-    }
-    if (p?.titles) {
-        if (p.titles.en) parts.push(p.titles.en);
-        if (p.titles.lv) parts.push(p.titles.lv);
-        if (p.titles.ru) parts.push(p.titles.ru);
-    }
+    appendBilesuCategoriesToParts(p?.categories, parts);
+    appendBilesuLocalizedToParts(p?.titles, parts, ["en", "lv", "ru"]);
     return parts.join(" \n ");
 }
 
@@ -329,24 +336,26 @@ function sortDiscoveryDateKey(item) {
 function bilesuTextSearchHaystack(event) {
     const parts = [];
     const p = event.performance;
-    if (p?.titles) {
-        if (p.titles.en) parts.push(p.titles.en);
-        if (p.titles.lv) parts.push(p.titles.lv);
-        if (p.titles.ru) parts.push(p.titles.ru);
-    }
-    if (p?.categories?.length) {
-        for (const c of p.categories) {
-            if (c.en) parts.push(c.en);
-            if (c.lv) parts.push(c.lv);
-            if (c.ru) parts.push(c.ru);
+    appendBilesuLocalizedToParts(p?.titles, parts, ["en", "lv", "ru"]);
+    appendBilesuCategoriesToParts(p?.categories, parts);
+    appendBilesuLocalizedToParts(event.venue?.titles, parts, ["en", "lv"]);
+    return parts.join(" \n ").toLowerCase();
+}
+
+function collectBilesuSearchMatches(lists, needle, maxResults) {
+    const out = [];
+    const seen = new Set();
+    for (const list of lists) {
+        if (!Array.isArray(list)) continue;
+        for (const e of list) {
+            if (!e?.id || seen.has(e.id)) continue;
+            if (!bilesuTextSearchHaystack(e).includes(needle)) continue;
+            seen.add(e.id);
+            out.push({ ...e, id: `bp-${e.id}` });
+            if (out.length >= maxResults) return out;
         }
     }
-    if (event.venue?.titles) {
-        const v = event.venue.titles;
-        if (v.en) parts.push(v.en);
-        if (v.lv) parts.push(v.lv);
-    }
-    return parts.join(" \n ").toLowerCase();
+    return out;
 }
 
 /**
@@ -359,19 +368,7 @@ export async function searchBilesuParadiseByQuery(query, { maxResults = 40 } = {
     const venueIds = BILESU_GENRE_VENUE_IDS.slice(0, SEARCH_DISCOVERY_BP_VENUE_COUNT);
     try {
         const lists = await Promise.all(venueIds.map((id) => fetchBilesuVenueRepertoire(id)));
-        const out = [];
-        const seen = new Set();
-        for (const list of lists) {
-            if (!Array.isArray(list)) continue;
-            for (const e of list) {
-                if (!e?.id || seen.has(e.id)) continue;
-                if (!bilesuTextSearchHaystack(e).includes(needle)) continue;
-                seen.add(e.id);
-                out.push({ ...e, id: `bp-${e.id}` });
-                if (out.length >= maxResults) return out;
-            }
-        }
-        return out;
+        return collectBilesuSearchMatches(lists, needle, maxResults);
     } catch (error) {
         console.error("Error searching Biļešu Paradīze:", error);
         return [];

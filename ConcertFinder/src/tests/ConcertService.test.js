@@ -52,7 +52,7 @@ test('fetchConcerts returns mapped events correctly with city', async () => {
 
 test('fetchConcerts returns mapped events correctly with latlong', async () => {
     fetch.mockResponseOnce(JSON.stringify(mockApiResponse));
-    const latlong = { latitude: 40.7128, longitude: -74.0060 };
+    const latlong = { latitude: 40.7128, longitude: -74.006 };
 
     const concerts = await fetchConcerts({ keyword: 'rock', latlong });
 

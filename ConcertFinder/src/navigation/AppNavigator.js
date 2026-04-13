@@ -7,6 +7,13 @@ import { TAB_BAR_BACKGROUND } from "../constants/layout";
 
 const Tab = createBottomTabNavigator();
 
+function MainTabBarIcon({ routeName, color, size }) {
+    let iconName;
+    if (routeName === "HomeTab") iconName = "home";
+    else if (routeName === "DiscoveryTab") iconName = "search";
+    return <Ionicons name={iconName} size={size} color={color} />;
+}
+
 export default function AppNavigator() {
     const insets = useSafeAreaInsets();
 
@@ -23,12 +30,9 @@ export default function AppNavigator() {
                 },
                 tabBarActiveTintColor: "#FF6F00",
                 tabBarInactiveTintColor: "#888",
-                tabBarIcon: ({ color, size }) => {
-                    let iconName;
-                    if (route.name === "HomeTab") iconName = "home";
-                    else if (route.name === "DiscoveryTab") iconName = "search";
-                    return <Ionicons name={iconName} size={size} color={color} />;
-                },
+                tabBarIcon: ({ color, size }) => (
+                    <MainTabBarIcon routeName={route.name} color={color} size={size} />
+                ),
             })}
             lazy={false}
             sceneContainerStyle={{ backgroundColor: "#111" }}

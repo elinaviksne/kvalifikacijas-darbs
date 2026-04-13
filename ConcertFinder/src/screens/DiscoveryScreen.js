@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 import { View, Text, TextInput, FlatList, TouchableOpacity, ActivityIndicator, Keyboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -307,3 +308,9 @@ export default function DiscoveryScreen({ navigation }) {
         </View>
     );
 }
+
+DiscoveryScreen.propTypes = {
+    navigation: PropTypes.shape({
+        navigate: PropTypes.func.isRequired,
+    }).isRequired,
+};

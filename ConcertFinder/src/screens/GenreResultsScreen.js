@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import PropTypes from "prop-types";
 import {
     View,
     FlatList,
@@ -23,8 +24,8 @@ function mergeByDate(bilesu, ticketmaster) {
 
 const REFRESH_COLORS = ["#FF6F00"];
 
-export default function GenreResultsScreen({ route }) {
-    const { genre, genreId: genreIdParam } = route.params;
+function GenreResultsScreen({ route: { params } }) {
+    const { genre, genreId: genreIdParam } = params;
     const genreId = genreIdParam ?? genreIdFromLabel(genre);
 
     const [events, setEvents] = useState([]);
@@ -173,3 +174,17 @@ export default function GenreResultsScreen({ route }) {
         </View>
     );
 }
+
+export default GenreResultsScreen;
+
+GenreResultsScreen.propTypes = {
+    route: PropTypes.shape({
+        params: PropTypes.shape({
+            genre: PropTypes.string.isRequired,
+            genreId: PropTypes.string,
+        }).isRequired,
+    }).isRequired,
+    navigation: PropTypes.shape({
+        navigate: PropTypes.func.isRequired,
+    }).isRequired,
+};

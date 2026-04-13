@@ -20,7 +20,7 @@ export default function App() {
     if (Platform.OS !== "android") return;
 
     const applyNavBarStyle = () => {
-      void NavigationBar.setButtonStyleAsync("light");
+      NavigationBar.setButtonStyleAsync("light").catch(() => {});
     };
 
     applyNavBarStyle();
