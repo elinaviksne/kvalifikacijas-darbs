@@ -154,11 +154,11 @@ function GenreResultsScreen({ route: { params } }) {
                     />
                 }
                 ListEmptyComponent={
-                    !loadingMore ? (
+                    loadingMore ? null : (
                         <Text style={{ color: "white", textAlign: "center", marginTop: 24 }}>
                             No concerts found for this genre.
                         </Text>
-                    ) : null
+                    )
                 }
                 ListFooterComponent={
                     loadingMore ? (

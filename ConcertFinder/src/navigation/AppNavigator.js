@@ -1,4 +1,5 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import PropTypes from "prop-types";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeStackNavigator from "./HomeStackNavigator";
@@ -14,12 +15,26 @@ function MainTabBarIcon({ routeName, color, size }) {
     return <Ionicons name={iconName} size={size} color={color} />;
 }
 
+MainTabBarIcon.propTypes = {
+    routeName: PropTypes.string.isRequired,
+    color: PropTypes.string.isRequired,
+    size: PropTypes.number.isRequired,
+};
+
+function MainTabBarIconHome(props) {
+    return <MainTabBarIcon routeName="HomeTab" {...props} />;
+}
+
+function MainTabBarIconDiscovery(props) {
+    return <MainTabBarIcon routeName="DiscoveryTab" {...props} />;
+}
+
 export default function AppNavigator() {
     const insets = useSafeAreaInsets();
 
     return (
         <Tab.Navigator
-            screenOptions={({ route }) => ({
+            screenOptions={{
                 headerShown: false,
                 tabBarStyle: {
                     backgroundColor: TAB_BAR_BACKGROUND,
@@ -30,10 +45,7 @@ export default function AppNavigator() {
                 },
                 tabBarActiveTintColor: "#FF6F00",
                 tabBarInactiveTintColor: "#888",
-                tabBarIcon: ({ color, size }) => (
-                    <MainTabBarIcon routeName={route.name} color={color} size={size} />
-                ),
-            })}
+            }}
             lazy={false}
             sceneContainerStyle={{ backgroundColor: "#111" }}
         >
@@ -43,6 +55,7 @@ export default function AppNavigator() {
                 options={{
                     title: "Home",
                     unmountOnBlur: false,
+                    tabBarIcon: MainTabBarIconHome,
                 }}
             />
             <Tab.Screen
@@ -51,6 +64,7 @@ export default function AppNavigator() {
                 options={{
                     title: "Discover",
                     unmountOnBlur: false,
+                    tabBarIcon: MainTabBarIconDiscovery,
                 }}
             />
         </Tab.Navigator>
