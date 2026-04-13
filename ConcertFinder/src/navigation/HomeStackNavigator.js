@@ -1,5 +1,8 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { STACK_HEADER_TITLE_TEXT_STYLE } from "../constants/layout";
+import {
+    HEADER_STATUS_BACKGROUND,
+    STACK_HEADER_TITLE_TEXT_STYLE,
+} from "../constants/layout";
 import HomeScreen from "../screens/HomeScreen";
 
 const Stack = createNativeStackNavigator();
@@ -9,13 +12,15 @@ export default function HomeStackNavigator() {
         <Stack.Navigator
             screenOptions={{
                 headerStyle: {
-                    backgroundColor: "#222",
+                    backgroundColor: HEADER_STATUS_BACKGROUND,
                     borderBottomColor: "transparent",
                 },
                 headerTintColor: "#FF6F00",
                 headerTitleAlign: "center",
                 headerTitleStyle: STACK_HEADER_TITLE_TEXT_STYLE,
                 headerShadowVisible: false,
+                statusBarStyle: "light",
+                statusBarBackgroundColor: HEADER_STATUS_BACKGROUND,
             }}
         >
             <Stack.Screen

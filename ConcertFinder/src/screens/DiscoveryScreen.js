@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, FlatList, TouchableOpacity, ScrollView, ActivityIndicator, Keyboard } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import ConcertCard from "../components/ConcertCard";
@@ -58,7 +58,6 @@ function genreHeroFromQuery(trimmed) {
 }
 
 export default function DiscoveryScreen({ navigation }) {
-    const insets = useSafeAreaInsets();
     const tabBarHeight = useBottomTabBarHeight();
     const [query, setQuery] = useState("");
     const [results, setResults] = useState([]);
@@ -149,7 +148,7 @@ export default function DiscoveryScreen({ navigation }) {
     );
 
     const discoverBar = (
-        <View style={[styles.discoverNavBar, { paddingTop: insets.top + 8 }]}>
+        <View style={[styles.discoverNavBar, { paddingTop: 10 }]}>
             <Text style={styles.discoverNavTitle}>Discover</Text>
         </View>
     );
@@ -202,7 +201,7 @@ export default function DiscoveryScreen({ navigation }) {
         ({ item }) => {
             if (item.rowType === "discover") {
                 return (
-                    <View style={[styles.discoverNavBar, { paddingTop: insets.top + 8 }]}>
+                    <View style={[styles.discoverNavBar, { paddingTop: 10 }]}>
                         <Text style={styles.discoverNavTitle}>Discover</Text>
                     </View>
                 );
@@ -244,58 +243,66 @@ export default function DiscoveryScreen({ navigation }) {
             }
             return <ConcertCard item={item} />;
         },
-        [insets.top, navigation, stickySearchBlock]
+        [navigation, stickySearchBlock]
     );
 
     if (!inSearchMode) {
         return (
-            <View style={styles.container}>
-                <ScrollView
-                    style={{ flex: 1 }}
-                    contentContainerStyle={scrollContentPad}
-                    stickyHeaderIndices={[1]}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator
-                >
-                    {discoverBar}
-                    {stickySearchBlock}
-                    {browseBody}
-                </ScrollView>
+            <View style={styles.statusBarFill}>
+                <SafeAreaView style={styles.safeTransparent} edges={["top", "left", "right"]}>
+                    <View style={styles.innerCanvas}>
+                        <ScrollView
+                            style={{ flex: 1 }}
+                            contentContainerStyle={scrollContentPad}
+                            stickyHeaderIndices={[1]}
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator
+                        >
+                            {discoverBar}
+                            {stickySearchBlock}
+                            {browseBody}
+                        </ScrollView>
+                    </View>
+                </SafeAreaView>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <FlatList
-                key="discovery-search"
-                style={{ flex: 1 }}
-                data={searchListData}
-                numColumns={1}
-                keyExtractor={searchKeyExtractor}
-                renderItem={renderSearchRow}
-                stickyHeaderIndices={[1]}
-                contentContainerStyle={[
-                    styles.list,
-                    scrollContentPad,
-                    results.length === 0 && !searching && { flexGrow: 1 },
-                ]}
-                keyboardShouldPersistTaps="handled"
-                ListFooterComponent={
-                    !searching && results.length === 0 ? (
-                        <Text
-                            style={{
-                                color: "#888",
-                                textAlign: "center",
-                                marginTop: genreHeroRow ? 8 : 24,
-                                paddingHorizontal: 24,
-                            }}
-                        >
-                            No concerts match that search. Try another keyword.
-                        </Text>
-                    ) : undefined
-                }
-            />
+        <View style={styles.statusBarFill}>
+            <SafeAreaView style={styles.safeTransparent} edges={["top", "left", "right"]}>
+                <View style={styles.innerCanvas}>
+                    <FlatList
+                        key="discovery-search"
+                        style={{ flex: 1 }}
+                        data={searchListData}
+                        numColumns={1}
+                        keyExtractor={searchKeyExtractor}
+                        renderItem={renderSearchRow}
+                        stickyHeaderIndices={[1]}
+                        contentContainerStyle={[
+                            styles.list,
+                            scrollContentPad,
+                            results.length === 0 && !searching && { flexGrow: 1 },
+                        ]}
+                        keyboardShouldPersistTaps="handled"
+                        ListFooterComponent={
+                            !searching && results.length === 0 ? (
+                                <Text
+                                    style={{
+                                        color: "#888",
+                                        textAlign: "center",
+                                        marginTop: genreHeroRow ? 8 : 24,
+                                        paddingHorizontal: 24,
+                                    }}
+                                >
+                                    No concerts match that search. Try another keyword.
+                                </Text>
+                            ) : undefined
+                        }
+                    />
+                </View>
+            </SafeAreaView>
         </View>
     );
 }

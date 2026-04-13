@@ -1,14 +1,23 @@
 import { StyleSheet } from "react-native";
-import { STACK_HEADER_TITLE_TEXT_STYLE } from "../constants/layout";
+import { HEADER_STATUS_BACKGROUND, STACK_HEADER_TITLE_TEXT_STYLE } from "../constants/layout";
 
 export default StyleSheet.create({
-    container: {
+    statusBarFill: {
+        flex: 1,
+        width: "100%",
+        backgroundColor: HEADER_STATUS_BACKGROUND,
+    },
+    safeTransparent: {
+        flex: 1,
+        backgroundColor: "transparent",
+    },
+    innerCanvas: {
         flex: 1,
         width: "100%",
         backgroundColor: "#121212",
     },
     discoverNavBar: {
-        backgroundColor: "#222",
+        backgroundColor: HEADER_STATUS_BACKGROUND,
         paddingBottom: 14,
         marginHorizontal: -16,
         borderBottomWidth: StyleSheet.hairlineWidth,
