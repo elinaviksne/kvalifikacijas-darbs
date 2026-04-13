@@ -91,4 +91,41 @@ export default StyleSheet.create({
         color: "#888",
         fontSize: 13,
     },
+    genreSearchHero: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#2a2a2a",
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: "#333",
+    },
+    genreSearchThumb: {
+        width: 72,
+        height: 72,
+        borderRadius: 6,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    genreSearchTextCol: {
+        flex: 1,
+        marginLeft: 16,
+        justifyContent: "center",
+    },
+    genreSearchTitle: {
+        fontSize: 22,
+        fontWeight: "700",
+        color: "#fff",
+        letterSpacing: -0.3,
+    },
+    genreSearchKind: {
+        fontSize: 13,
+        fontWeight: "500",
+        color: "#888",
+        marginTop: 6,
+    },
+    genreSearchChevron: {
+        marginLeft: 8,
+    },
 });

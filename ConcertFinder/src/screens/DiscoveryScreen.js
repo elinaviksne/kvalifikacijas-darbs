@@ -1,20 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-    View,
-    Text,
-    TextInput,
-    FlatList,
-    TouchableOpacity,
-    ScrollView,
-    ActivityIndicator,
-    Keyboard,
-} from "react-native";
+import { View, Text, TextInput, FlatList, TouchableOpacity, ScrollView, ActivityIndicator, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import ConcertCard from "../components/ConcertCard";
-import { searchDiscoveryConcerts } from "../services/ConcertService";
+import {
+    searchDiscoveryConcerts,
+    findDiscoveryGenreRoute,
+} from "../services/ConcertService";
 import styles from "../styles/DiscoveryScreenStyles";
+
+const GENRE_SEARCH_ACCENT = {
+    rock: "#6B4E3D",
+    pop: "#5C3D6B",
+    hiphop: "#4A5C6B",
+    jazz: "#6B5C3D",
+    blues: "#3D4A6B",
+    metal: "#4A4A4A",
+    country: "#6B6B3D",
+    folk: "#3D6B5C",
+    edm: "#6B3D5C",
+    classical: "#4A3D5C",
+    opera: "#5C3D4A",
+    schlager: "#5C5C3D",
+    gospel: "#3D5C5C",
+};
 
 const GENRES = [
     { id: "rock", label: "Rock" },
@@ -36,6 +46,16 @@ const SEARCH_DEBOUNCE_MS = 450;
 
 const ROW_DISCOVER = { rowType: "discover" };
 const ROW_SEARCH = { rowType: "search" };
+
+function genreHeroFromQuery(trimmed) {
+    const route = findDiscoveryGenreRoute(trimmed);
+    if (!route) return null;
+    return {
+        rowType: "genre",
+        genre: route.genre,
+        genreId: route.genreId,
+    };
+}
 
 export default function DiscoveryScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -163,14 +183,18 @@ export default function DiscoveryScreen({ navigation }) {
         </>
     );
 
-    const searchListData = useMemo(
-        () => [ROW_DISCOVER, ROW_SEARCH, ...results],
-        [results]
-    );
+    const genreHeroRow = useMemo(() => genreHeroFromQuery(trimmed), [trimmed]);
+
+    const searchListData = useMemo(() => {
+        const rows = [ROW_DISCOVER, ROW_SEARCH];
+        if (genreHeroRow) rows.push(genreHeroRow);
+        return [...rows, ...results];
+    }, [genreHeroRow, results]);
 
     const searchKeyExtractor = useCallback((item) => {
         if (item.rowType === "discover") return "__discover";
         if (item.rowType === "search") return "__search";
+        if (item.rowType === "genre") return `__genre_${item.genreId}`;
         return String(item.id);
     }, []);
 
@@ -186,9 +210,41 @@ export default function DiscoveryScreen({ navigation }) {
             if (item.rowType === "search") {
                 return stickySearchBlock;
             }
+            if (item.rowType === "genre") {
+                const accent =
+                    GENRE_SEARCH_ACCENT[item.genreId] ?? GENRE_SEARCH_ACCENT.rock;
+                return (
+                    <TouchableOpacity
+                        style={styles.genreSearchHero}
+                        onPress={() =>
+                            navigation.navigate("GenreResults", {
+                                genre: item.genre,
+                                genreId: item.genreId,
+                            })
+                        }
+                        activeOpacity={0.85}
+                    >
+                        <View
+                            style={[styles.genreSearchThumb, { backgroundColor: accent }]}
+                        >
+                            <Ionicons name="musical-notes" size={36} color="#ffffffcc" />
+                        </View>
+                        <View style={styles.genreSearchTextCol}>
+                            <Text style={styles.genreSearchTitle}>{item.genre}</Text>
+                            <Text style={styles.genreSearchKind}>Genre</Text>
+                        </View>
+                        <Ionicons
+                            name="chevron-forward"
+                            size={22}
+                            color="#666"
+                            style={styles.genreSearchChevron}
+                        />
+                    </TouchableOpacity>
+                );
+            }
             return <ConcertCard item={item} />;
         },
-        [insets.top, stickySearchBlock]
+        [insets.top, navigation, stickySearchBlock]
     );
 
     if (!inSearchMode) {
@@ -231,7 +287,7 @@ export default function DiscoveryScreen({ navigation }) {
                             style={{
                                 color: "#888",
                                 textAlign: "center",
-                                marginTop: 24,
+                                marginTop: genreHeroRow ? 8 : 24,
                                 paddingHorizontal: 24,
                             }}
                         >
