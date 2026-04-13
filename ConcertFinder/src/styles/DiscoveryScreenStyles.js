@@ -35,11 +35,11 @@ export default StyleSheet.create({
         marginHorizontal: -16,
         paddingHorizontal: 16,
     },
-    genreGrid: {
+    genrePairRow: {
         flexDirection: "row",
-        flexWrap: "wrap",
         justifyContent: "space-between",
-        paddingTop: 4,
+        width: "100%",
+        marginBottom: 12,
     },
     genreGridItem: {
         width: "48%",

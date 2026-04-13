@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, FlatList, TouchableOpacity, ScrollView, ActivityIndicator, Keyboard } from "react-native";
+import { View, Text, TextInput, FlatList, TouchableOpacity, ActivityIndicator, Keyboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -46,6 +46,22 @@ const SEARCH_DEBOUNCE_MS = 450;
 
 const ROW_DISCOVER = { rowType: "discover" };
 const ROW_SEARCH = { rowType: "search" };
+const ROW_BROWSE_ALL = { rowType: "browse_all" };
+
+function chunkGenresIntoPairs(genres) {
+    const rows = [];
+    for (let i = 0; i < genres.length; i += 2) {
+        const left = genres[i];
+        const right = genres[i + 1] ?? null;
+        rows.push({
+            rowType: "genre_pair",
+            id: `${left.id}_${right ? right.id : "solo"}`,
+            left,
+            right,
+        });
+    }
+    return rows;
+}
 
 function genreHeroFromQuery(trimmed) {
     const route = findDiscoveryGenreRoute(trimmed);
@@ -147,12 +163,6 @@ export default function DiscoveryScreen({ navigation }) {
         </View>
     );
 
-    const discoverBar = (
-        <View style={[styles.discoverNavBar, { paddingTop: 10 }]}>
-            <Text style={styles.discoverNavTitle}>Discover</Text>
-        </View>
-    );
-
     const bottomPad = 32 + tabBarHeight;
 
     const scrollContentPad = {
@@ -160,44 +170,27 @@ export default function DiscoveryScreen({ navigation }) {
         paddingHorizontal: 16,
     };
 
-    const browseBody = (
-        <>
-            <Text style={styles.sectionTitle}>Browse all</Text>
-            <View style={styles.genreGrid}>
-                {GENRES.map((item) => (
-                    <TouchableOpacity
-                        key={item.id}
-                        style={[styles.genreBox, styles.genreGridItem]}
-                        onPress={() =>
-                            navigation.navigate("GenreResults", {
-                                genre: item.label,
-                                genreId: item.id,
-                            })
-                        }
-                    >
-                        <Text style={styles.genreText}>{item.label}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        </>
-    );
-
     const genreHeroRow = useMemo(() => genreHeroFromQuery(trimmed), [trimmed]);
 
-    const searchListData = useMemo(() => {
+    const listData = useMemo(() => {
+        if (!inSearchMode) {
+            return [ROW_DISCOVER, ROW_SEARCH, ROW_BROWSE_ALL, ...chunkGenresIntoPairs(GENRES)];
+        }
         const rows = [ROW_DISCOVER, ROW_SEARCH];
         if (genreHeroRow) rows.push(genreHeroRow);
         return [...rows, ...results];
-    }, [genreHeroRow, results]);
+    }, [inSearchMode, genreHeroRow, results]);
 
-    const searchKeyExtractor = useCallback((item) => {
+    const listKeyExtractor = useCallback((item) => {
         if (item.rowType === "discover") return "__discover";
         if (item.rowType === "search") return "__search";
+        if (item.rowType === "browse_all") return "__browse_all";
+        if (item.rowType === "genre_pair") return `pair_${item.id}`;
         if (item.rowType === "genre") return `__genre_${item.genreId}`;
         return String(item.id);
     }, []);
 
-    const renderSearchRow = useCallback(
+    const renderListRow = useCallback(
         ({ item }) => {
             if (item.rowType === "discover") {
                 return (
@@ -208,6 +201,34 @@ export default function DiscoveryScreen({ navigation }) {
             }
             if (item.rowType === "search") {
                 return stickySearchBlock;
+            }
+            if (item.rowType === "browse_all") {
+                return <Text style={styles.sectionTitle}>Browse all</Text>;
+            }
+            if (item.rowType === "genre_pair") {
+                const cell = (g) => (
+                    <TouchableOpacity
+                        style={[styles.genreBox, styles.genreGridItem]}
+                        onPress={() =>
+                            navigation.navigate("GenreResults", {
+                                genre: g.label,
+                                genreId: g.id,
+                            })
+                        }
+                    >
+                        <Text style={styles.genreText}>{g.label}</Text>
+                    </TouchableOpacity>
+                );
+                return (
+                    <View style={styles.genrePairRow}>
+                        {cell(item.left)}
+                        {item.right ? (
+                            cell(item.right)
+                        ) : (
+                            <View style={[styles.genreGridItem, { height: 112 }]} />
+                        )}
+                    </View>
+                );
             }
             if (item.rowType === "genre") {
                 const accent =
@@ -246,48 +267,28 @@ export default function DiscoveryScreen({ navigation }) {
         [navigation, stickySearchBlock]
     );
 
-    if (!inSearchMode) {
-        return (
-            <View style={styles.statusBarFill}>
-                <SafeAreaView style={styles.safeTransparent} edges={["top", "left", "right"]}>
-                    <View style={styles.innerCanvas}>
-                        <ScrollView
-                            style={{ flex: 1 }}
-                            contentContainerStyle={scrollContentPad}
-                            stickyHeaderIndices={[1]}
-                            keyboardShouldPersistTaps="handled"
-                            showsVerticalScrollIndicator
-                        >
-                            {discoverBar}
-                            {stickySearchBlock}
-                            {browseBody}
-                        </ScrollView>
-                    </View>
-                </SafeAreaView>
-            </View>
-        );
-    }
-
     return (
         <View style={styles.statusBarFill}>
             <SafeAreaView style={styles.safeTransparent} edges={["top", "left", "right"]}>
                 <View style={styles.innerCanvas}>
                     <FlatList
-                        key="discovery-search"
                         style={{ flex: 1 }}
-                        data={searchListData}
+                        data={listData}
                         numColumns={1}
-                        keyExtractor={searchKeyExtractor}
-                        renderItem={renderSearchRow}
+                        keyExtractor={listKeyExtractor}
+                        renderItem={renderListRow}
                         stickyHeaderIndices={[1]}
                         contentContainerStyle={[
                             styles.list,
                             scrollContentPad,
-                            results.length === 0 && !searching && { flexGrow: 1 },
+                            inSearchMode &&
+                                results.length === 0 &&
+                                !searching && { flexGrow: 1 },
                         ]}
                         keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
                         ListFooterComponent={
-                            !searching && results.length === 0 ? (
+                            inSearchMode && !searching && results.length === 0 ? (
                                 <Text
                                     style={{
                                         color: "#888",
