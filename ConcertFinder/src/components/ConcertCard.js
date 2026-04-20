@@ -1,7 +1,11 @@
-import { memo, useMemo } from "react";
-import { View, Text, Image, TouchableOpacity, Linking } from "react-native";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { View, Text, Image, TouchableOpacity, Linking, Alert } from "react-native";
 import PropTypes from "prop-types";
+import { Ionicons } from "@expo/vector-icons";
+import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import styles from "../styles/HomeScreenStyles";
+import { useAuth } from "../context/AuthContext";
+import { db } from "../firebase";
 
 function pickLocale(obj) {
     if (!obj || typeof obj !== "object") return null;
@@ -68,8 +72,130 @@ export function getConcertSortDate(item) {
     return item.date || "";
 }
 
+function getConcertDocumentId(item) {
+    return encodeURIComponent(String(item.id));
+}
+
+async function withTimeout(promise, ms) {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new Error("timeout"));
+        }, ms);
+    });
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
 const ConcertCard = ({ item }) => {
+    const { user } = useAuth();
     const c = useMemo(() => normalizeConcertItem(item), [item]);
+    const [saved, setSaved] = useState(false);
+    const [saveBusy, setSaveBusy] = useState(false);
+    const [feedback, setFeedback] = useState("");
+
+    useEffect(() => {
+        let active = true;
+        if (!user?.uid) {
+            setSaved(false);
+            return undefined;
+        }
+
+        const ref = doc(
+            db,
+            "users",
+            user.uid,
+            "savedConcerts",
+            getConcertDocumentId(item)
+        );
+        getDoc(ref)
+            .then((snap) => {
+                if (active) setSaved(snap.exists());
+            })
+            .catch(() => {
+                if (active) setSaved(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [item, user?.uid]);
+
+    const toggleSave = useCallback(async () => {
+        if (!user?.uid) {
+            setFeedback("Sign in to save concerts.");
+            Alert.alert("Sign in required", "Create an account or sign in to save concerts.");
+            return;
+        }
+        if (saveBusy) return;
+
+        setFeedback(saved ? "Removing..." : "Saving...");
+        setSaveBusy(true);
+        const ref = doc(
+            db,
+            "users",
+            user.uid,
+            "savedConcerts",
+            getConcertDocumentId(item)
+        );
+
+        try {
+            if (saved) {
+                await withTimeout(deleteDoc(ref), 10000);
+                setSaved(false);
+                setFeedback("Removed from saved concerts.");
+                Alert.alert("Removed", "Concert removed from saved concerts.");
+            } else {
+                await withTimeout(
+                    setDoc(ref, {
+                    concertId: String(item.id),
+                    name: c.name,
+                    date: c.date || "",
+                    venue: c.venue || "",
+                    url: c.url || "",
+                    image: c.image || null,
+                    reminderAt: null,
+                    reminderEnabled: true,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    }),
+                    10000
+                );
+                setSaved(true);
+                setFeedback("Saved for reminders.");
+                Alert.alert("Saved", "Concert saved for reminders.");
+            }
+        } catch (error) {
+            console.error("Save concert error", error);
+            if (error?.message === "timeout") {
+                setFeedback("Save timed out. Check internet/firestore setup and try again.");
+                Alert.alert(
+                    "Save timed out",
+                    "Could not reach Firestore in time. Check internet and Firestore setup."
+                );
+            } else if (error?.code === "permission-denied") {
+                setFeedback("Permission denied. Firestore rules need to allow this user.");
+                Alert.alert(
+                    "Permission denied",
+                    "Your Firestore rules currently block saving. I can help you fix the rules."
+                );
+            } else if (error?.code === "failed-precondition") {
+                setFeedback("Enable Firestore Database in Firebase Console first.");
+                Alert.alert(
+                    "Enable Firestore",
+                    "Create Firestore Database in Firebase Console first."
+                );
+            } else {
+                setFeedback("Could not save. Please try again.");
+                Alert.alert("Save failed", "Could not save this concert. Please try again.");
+            }
+        } finally {
+            setSaveBusy(false);
+        }
+    }, [c.date, c.image, c.name, c.url, c.venue, item, saveBusy, saved, user?.uid]);
 
     return (
         <View style={styles.card}>
@@ -77,9 +203,28 @@ const ConcertCard = ({ item }) => {
             <Text style={styles.eventName}>{c.name}</Text>
             <Text style={styles.eventDate}>{c.date}</Text>
             <Text style={styles.eventVenue}>{c.venue}</Text>
-            <TouchableOpacity style={styles.ticketButton} onPress={() => Linking.openURL(c.url)}>
-                <Text style={styles.ticketButtonText}>Tickets</Text>
-            </TouchableOpacity>
+            <View style={styles.cardActionRow}>
+                <TouchableOpacity
+                    style={styles.ticketButton}
+                    onPress={() => Linking.openURL(c.url)}
+                >
+                    <Text style={styles.ticketButtonText}>Tickets</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.saveButton, saved && styles.saveButtonActive]}
+                    onPress={toggleSave}
+                    disabled={saveBusy}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons
+                        name={saveBusy ? "hourglass-outline" : saved ? "checkmark" : "add"}
+                        size={22}
+                        color={saved ? "#111" : "#fff"}
+                    />
+                </TouchableOpacity>
+            </View>
+            {feedback ? <Text style={styles.saveFeedbackText}>{feedback}</Text> : null}
         </View>
     );
 };

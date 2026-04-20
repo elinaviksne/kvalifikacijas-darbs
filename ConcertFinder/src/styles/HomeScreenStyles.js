@@ -58,6 +58,34 @@ export default StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
+    flex: 1,
+  },
+  cardActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  saveButton: {
+    width: 46,
+    height: 46,
+    minWidth: 46,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#555",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2d2d2d",
+    zIndex: 2,
+    elevation: 2,
+  },
+  saveButtonActive: {
+    backgroundColor: "#FF6F00",
+    borderColor: "#FF6F00",
+  },
+  saveFeedbackText: {
+    color: "#bdbdbd",
+    fontSize: 12,
+    marginTop: 8,
   },
 
   ticketButtonText: {
