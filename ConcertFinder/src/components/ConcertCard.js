@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, Image, TouchableOpacity, Linking, Alert } from "react-native";
 import PropTypes from "prop-types";
 import { Ionicons } from "@expo/vector-icons";
-import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { deleteDoc, doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import styles from "../styles/HomeScreenStyles";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
@@ -101,6 +101,7 @@ const ConcertCard = ({ item }) => {
         let active = true;
         if (!user?.uid) {
             setSaved(false);
+            setFeedback("");
             return undefined;
         }
 
@@ -111,18 +112,31 @@ const ConcertCard = ({ item }) => {
             "savedConcerts",
             getConcertDocumentId(item)
         );
-        getDoc(ref)
-            .then((snap) => {
-                if (active) setSaved(snap.exists());
-            })
-            .catch(() => {
-                if (active) setSaved(false);
-            });
+        const unsubscribe = onSnapshot(
+            ref,
+            (snap) => {
+                if (!active) return;
+                setSaved(snap.exists());
+                setFeedback("");
+            },
+            () => {
+                if (active) {
+                    setSaved(false);
+                }
+            }
+        );
 
         return () => {
             active = false;
+            unsubscribe();
         };
     }, [item, user?.uid]);
+
+    useEffect(() => {
+        if (!feedback) return undefined;
+        const timer = setTimeout(() => setFeedback(""), 2200);
+        return () => clearTimeout(timer);
+    }, [feedback]);
 
     const toggleSave = useCallback(async () => {
         if (!user?.uid) {
