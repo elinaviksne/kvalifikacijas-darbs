@@ -3,6 +3,7 @@ import {
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
+    ScrollView,
     Text,
     TextInput,
     TouchableOpacity,
@@ -35,6 +36,32 @@ function mapAuthError(error) {
     return "Authentication failed. Please try again.";
 }
 
+function profileFromUser(user) {
+    if (!user?.email) {
+        return { displayName: "Guest", username: "@guest", initials: "G" };
+    }
+    const local = user.email.split("@")[0] || "user";
+    const cleaned = local.replace(/[._-]+/g, " ").trim();
+    const displayName =
+        cleaned.length > 0
+            ? cleaned
+                  .split(" ")
+                  .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                  .join(" ")
+            : "User";
+    const initials = displayName
+        .split(" ")
+        .map((part) => part.charAt(0))
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
+    return {
+        displayName,
+        username: `@${local.toLowerCase()}`,
+        initials: initials || "U",
+    };
+}
+
 export default function AccountScreen() {
     const { user, initializing, signIn, signUp, signOutUser } = useAuth();
     const tabBarHeight = useBottomTabBarHeight();
@@ -42,6 +69,7 @@ export default function AccountScreen() {
     const [password, setPassword] = useState("");
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const profile = profileFromUser(user);
 
     const handleAuth = async (mode) => {
         setError("");
@@ -77,74 +105,106 @@ export default function AccountScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-            <KeyboardAvoidingView
-                style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
-            >
-                <View style={[styles.card, { marginBottom: tabBarHeight + 20 }]}>
-                    <Text style={styles.title}>Account</Text>
-                    <Text style={styles.subtitle}>
-                        Browse as guest anytime. Sign in only if you want to save concerts and reminders.
-                    </Text>
-
-                    {initializing ? (
-                        <ActivityIndicator size="small" color="#FF6F00" />
-                    ) : user ? (
-                        <View style={styles.loggedInSection}>
-                            <Text style={styles.loggedInLabel}>Signed in as</Text>
-                            <Text style={styles.userEmail}>{user.email}</Text>
-                            <TouchableOpacity
-                                style={[styles.actionButton, styles.secondaryButton]}
-                                onPress={handleSignOut}
-                                disabled={busy}
-                            >
-                                <Text style={styles.actionButtonText}>
-                                    {busy ? "Signing out..." : "Sign out"}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : (
-                        <View style={styles.form}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Email"
-                                placeholderTextColor="#888"
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                value={email}
-                                onChangeText={setEmail}
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Password (min 6 chars)"
-                                placeholderTextColor="#888"
-                                secureTextEntry
-                                value={password}
-                                onChangeText={setPassword}
-                            />
-                            <TouchableOpacity
-                                style={styles.actionButton}
-                                onPress={() => handleAuth("signin")}
-                                disabled={busy}
-                            >
-                                <Text style={styles.actionButtonText}>
-                                    {busy ? "Please wait..." : "Sign in"}
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.actionButton, styles.secondaryButton]}
-                                onPress={() => handleAuth("signup")}
-                                disabled={busy}
-                            >
-                                <Text style={styles.actionButtonText}>Create account</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
-                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <View style={styles.statusBarFill}>
+            <SafeAreaView style={styles.safeTransparent} edges={["top", "left", "right"]}>
+                <View style={styles.accountNavBar}>
+                    <Text style={styles.accountNavTitle}>Account</Text>
                 </View>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                <KeyboardAvoidingView
+                    style={styles.container}
+                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                >
+                    <ScrollView
+                        contentContainerStyle={[
+                            styles.scrollContent,
+                            { paddingBottom: tabBarHeight + 20 },
+                        ]}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <View style={styles.card}>
+                            {!user ? (
+                                <Text style={styles.subtitle}>
+                                    Browse as guest anytime. Sign in only if you want to save concerts and reminders.
+                                </Text>
+                            ) : null}
+
+                            {initializing ? (
+                                <ActivityIndicator size="small" color="#FF6F00" />
+                            ) : user ? (
+                                <View style={styles.loggedInSection}>
+                                    <View style={styles.profileHeader}>
+                                        <View style={styles.avatar}>
+                                            <Text style={styles.avatarText}>{profile.initials}</Text>
+                                        </View>
+                                        <Text style={styles.displayName}>{profile.displayName}</Text>
+                                        <Text style={styles.username}>{profile.username}</Text>
+                                        <TouchableOpacity style={styles.editButton} disabled={busy}>
+                                            <Text style={styles.editButtonText}>Edit account</Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    <View style={styles.savedConcertsSection}>
+                                        <Text style={styles.savedTitle}>Saved concerts</Text>
+                                        <View style={styles.savedConcertsPlaceholder}>
+                                            <Text style={styles.savedPlaceholderText}>
+                                                Your saved concerts will appear here.
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.secondaryButton]}
+                                    onPress={handleSignOut}
+                                    disabled={busy}
+                                >
+                                    <Text style={styles.actionButtonText}>
+                                        {busy ? "Signing out..." : "Sign out"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                            ) : (
+                                <View style={styles.form}>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Email"
+                                        placeholderTextColor="#888"
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        value={email}
+                                        onChangeText={setEmail}
+                                    />
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Password (min 6 chars)"
+                                        placeholderTextColor="#888"
+                                        secureTextEntry
+                                        value={password}
+                                        onChangeText={setPassword}
+                                    />
+                                    <TouchableOpacity
+                                        style={styles.actionButton}
+                                        onPress={() => handleAuth("signin")}
+                                        disabled={busy}
+                                    >
+                                        <Text style={styles.actionButtonText}>
+                                            {busy ? "Please wait..." : "Sign in"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, styles.secondaryButton]}
+                                        onPress={() => handleAuth("signup")}
+                                        disabled={busy}
+                                    >
+                                        <Text style={styles.actionButtonText}>Create account</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
+                            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </View>
     );
 }
