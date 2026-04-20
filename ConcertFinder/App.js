@@ -6,6 +6,7 @@ import { AppState, InteractionManager, Platform, View } from "react-native";
 import * as NavigationBar from "expo-navigation-bar";
 import { StatusBar } from "expo-status-bar";
 import { HEADER_STATUS_BACKGROUND, TAB_BAR_BACKGROUND } from "./src/constants/layout";
+import { AuthProvider } from "./src/context/AuthContext";
 
 const navigationTheme = {
   ...DarkTheme,
@@ -41,9 +42,11 @@ export default function App() {
     <View style={{ flex: 1, backgroundColor: TAB_BAR_BACKGROUND }}>
       <SafeAreaProvider style={{ flex: 1 }}>
         <StatusBar style="light" backgroundColor={HEADER_STATUS_BACKGROUND} translucent />
-        <NavigationContainer theme={navigationTheme}>
-          <AppNavigator />
-        </NavigationContainer>
+        <AuthProvider>
+          <NavigationContainer theme={navigationTheme}>
+            <AppNavigator />
+          </NavigationContainer>
+        </AuthProvider>
       </SafeAreaProvider>
     </View>
   );
