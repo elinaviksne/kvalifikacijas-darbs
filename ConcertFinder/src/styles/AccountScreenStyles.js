@@ -136,6 +136,45 @@ export default StyleSheet.create({
         textAlign: "center",
         fontSize: 14,
     },
+    savedConcertsList: {
+        gap: 10,
+    },
+    savedConcertItem: {
+        backgroundColor: "#181818",
+        borderWidth: 1,
+        borderColor: "#333",
+        borderRadius: 12,
+        padding: 12,
+    },
+    savedConcertRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+    savedConcertTextCol: {
+        flex: 1,
+    },
+    savedConcertName: {
+        color: "#fff",
+        fontSize: 15,
+        fontWeight: "700",
+        marginBottom: 4,
+    },
+    savedConcertMeta: {
+        color: "#aaa",
+        fontSize: 13,
+    },
+    removeSavedButton: {
+        backgroundColor: "#3a3a3a",
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+    },
+    removeSavedButtonText: {
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: "700",
+    },
     errorText: {
         color: "#ff8e8e",
         marginTop: 12,

@@ -6,18 +6,49 @@ import {
     signInWithEmailAndPassword,
     signOut,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
 const AuthContext = createContext(null);
+
+async function ensureUserProfile(user) {
+    if (!user?.uid) return;
+    const ref = doc(db, "users", user.uid);
+    const snap = await getDoc(ref);
+    const baseData = {
+        email: user.email || "",
+        displayName: user.displayName || "",
+        updatedAt: serverTimestamp(),
+    };
+
+    if (snap.exists()) {
+        await setDoc(ref, baseData, { merge: true });
+        return;
+    }
+
+    await setDoc(ref, {
+        ...baseData,
+        createdAt: serverTimestamp(),
+        reminderNotificationsEnabled: true,
+    });
+}
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [initializing, setInitializing] = useState(true);
 
     useEffect(() => {
-        const unsub = onAuthStateChanged(auth, (nextUser) => {
-            setUser(nextUser);
-            setInitializing(false);
+        const unsub = onAuthStateChanged(auth, async (nextUser) => {
+            try {
+                if (nextUser) {
+                    await ensureUserProfile(nextUser);
+                }
+            } catch (error) {
+                console.error("Failed to sync user profile", error);
+            } finally {
+                setUser(nextUser);
+                setInitializing(false);
+            }
         });
         return unsub;
     }, []);

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -11,7 +12,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { collection, deleteDoc, doc, onSnapshot, query } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
+import { db } from "../firebase";
 import styles from "../styles/AccountScreenStyles";
 
 function mapAuthError(error) {
@@ -69,7 +72,41 @@ export default function AccountScreen() {
     const [password, setPassword] = useState("");
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const [savedConcerts, setSavedConcerts] = useState([]);
+    const [savedLoading, setSavedLoading] = useState(false);
+    const [savedError, setSavedError] = useState("");
+    const [removingId, setRemovingId] = useState("");
     const profile = profileFromUser(user);
+
+    useEffect(() => {
+        if (!user?.uid) {
+            setSavedConcerts([]);
+            setSavedLoading(false);
+            setSavedError("");
+            return undefined;
+        }
+
+        setSavedLoading(true);
+        setSavedError("");
+        const savedRef = collection(db, "users", user.uid, "savedConcerts");
+        const unsubscribe = onSnapshot(
+            query(savedRef),
+            (snapshot) => {
+                const next = snapshot.docs.map((docSnap) => ({
+                    id: docSnap.id,
+                    ...docSnap.data(),
+                }));
+                setSavedConcerts(next);
+                setSavedLoading(false);
+            },
+            (snapshotError) => {
+                console.error("Failed to load saved concerts", snapshotError);
+                setSavedError("Could not load saved concerts.");
+                setSavedLoading(false);
+            }
+        );
+        return unsubscribe;
+    }, [user?.uid]);
 
     const handleAuth = async (mode) => {
         setError("");
@@ -101,6 +138,19 @@ export default function AccountScreen() {
             setError(mapAuthError(e));
         } finally {
             setBusy(false);
+        }
+    };
+
+    const handleRemoveSavedConcert = async (concertId) => {
+        if (!user?.uid || !concertId || removingId) return;
+        setRemovingId(concertId);
+        try {
+            await deleteDoc(doc(db, "users", user.uid, "savedConcerts", concertId));
+        } catch (removeError) {
+            console.error("Failed to remove saved concert", removeError);
+            Alert.alert("Remove failed", "Could not remove concert right now. Please try again.");
+        } finally {
+            setRemovingId("");
         }
     };
 
@@ -145,11 +195,60 @@ export default function AccountScreen() {
 
                                     <View style={styles.savedConcertsSection}>
                                         <Text style={styles.savedTitle}>Saved concerts</Text>
-                                        <View style={styles.savedConcertsPlaceholder}>
-                                            <Text style={styles.savedPlaceholderText}>
-                                                Your saved concerts will appear here.
-                                            </Text>
-                                        </View>
+                                        {savedLoading ? (
+                                            <View style={styles.savedConcertsPlaceholder}>
+                                                <ActivityIndicator size="small" color="#FF6F00" />
+                                            </View>
+                                        ) : savedError ? (
+                                            <View style={styles.savedConcertsPlaceholder}>
+                                                <Text style={styles.savedPlaceholderText}>{savedError}</Text>
+                                            </View>
+                                        ) : savedConcerts.length === 0 ? (
+                                            <View style={styles.savedConcertsPlaceholder}>
+                                                <Text style={styles.savedPlaceholderText}>
+                                                    Your saved concerts will appear here.
+                                                </Text>
+                                            </View>
+                                        ) : (
+                                            <View style={styles.savedConcertsList}>
+                                                {savedConcerts.map((concert) => (
+                                                    <View key={concert.id} style={styles.savedConcertItem}>
+                                                        <View style={styles.savedConcertRow}>
+                                                            <View style={styles.savedConcertTextCol}>
+                                                                <Text
+                                                                    style={styles.savedConcertName}
+                                                                    numberOfLines={2}
+                                                                >
+                                                                    {concert.name || "Untitled concert"}
+                                                                </Text>
+                                                                <Text style={styles.savedConcertMeta}>
+                                                                    {concert.date || "Date TBD"}
+                                                                </Text>
+                                                                <Text
+                                                                    style={styles.savedConcertMeta}
+                                                                    numberOfLines={1}
+                                                                >
+                                                                    {concert.venue || "Venue TBD"}
+                                                                </Text>
+                                                            </View>
+                                                            <TouchableOpacity
+                                                                style={styles.removeSavedButton}
+                                                                onPress={() =>
+                                                                    handleRemoveSavedConcert(concert.id)
+                                                                }
+                                                                disabled={removingId === concert.id}
+                                                            >
+                                                                <Text style={styles.removeSavedButtonText}>
+                                                                    {removingId === concert.id
+                                                                        ? "..."
+                                                                        : "Remove"}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    </View>
+                                                ))}
+                                            </View>
+                                        )}
                                     </View>
 
                                 <TouchableOpacity
