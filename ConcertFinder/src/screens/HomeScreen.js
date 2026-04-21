@@ -14,6 +14,17 @@ import styles from "../styles/HomeScreenStyles";
 
 const REFRESH_COLORS = ["#FF6F00"];
 
+/** `getCurrentPositionAsync` can hang indefinitely on some Android builds / emulators without a fix. */
+const CURRENT_POSITION_TIMEOUT_MS = 18_000;
+
+function withTimeout(promise, ms, label) {
+    let timeoutId;
+    const timeout = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
 export default function HomeScreen() {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -51,10 +62,22 @@ export default function HomeScreen() {
                 if (last?.coords) {
                     coords = last.coords;
                 } else {
-                    const location = await Location.getCurrentPositionAsync({});
-                    coords = location.coords;
+                    try {
+                        const location = await withTimeout(
+                            Location.getCurrentPositionAsync({
+                                accuracy: Location.Accuracy.Balanced,
+                            }),
+                            CURRENT_POSITION_TIMEOUT_MS,
+                            "getCurrentPositionAsync"
+                        );
+                        coords = location.coords;
+                    } catch (e) {
+                        console.warn("Home: could not get GPS fix; showing Biļešu Paradīze only.", e?.message ?? e);
+                    }
                 }
-                ticketmaster = await fetchConcerts({ keyword: "rock", latlong: coords });
+                if (coords) {
+                    ticketmaster = await fetchConcerts({ keyword: "rock", latlong: coords });
+                }
             } else {
                 console.warn("Location permission denied");
             }
