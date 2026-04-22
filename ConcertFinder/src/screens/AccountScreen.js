@@ -1,15 +1,5 @@
-import { useEffect, useState } from "react";
-import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Animated, Alert, KeyboardAvoidingView, PanResponder, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { collection, deleteDoc, doc, onSnapshot, query } from "firebase/firestore";
@@ -63,6 +53,71 @@ function profileFromUser(user) {
         username: `@${local.toLowerCase()}`,
         initials: initials || "U",
     };
+}
+
+const SWIPE_DELETE_WIDTH = 104;
+const SWIPE_OPEN_THRESHOLD = 52;
+
+function SwipeToDeleteRow({ children, onDelete, deleting }) {
+    const translateX = useRef(new Animated.Value(0)).current;
+    const openRef = useRef(false);
+
+    const animateTo = (toValue) => {
+        Animated.spring(translateX, {
+            toValue,
+            useNativeDriver: true,
+            bounciness: 0,
+            speed: 20,
+        }).start();
+        openRef.current = toValue < 0;
+    };
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (_, gestureState) =>
+                Math.abs(gestureState.dx) > 8 &&
+                Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+            onPanResponderGrant: () => {
+                translateX.stopAnimation();
+            },
+            onPanResponderMove: (_, gestureState) => {
+                const rawDx = openRef.current ? gestureState.dx - SWIPE_DELETE_WIDTH : gestureState.dx;
+                const clampedDx = Math.min(0, Math.max(-SWIPE_DELETE_WIDTH, rawDx));
+                translateX.setValue(clampedDx);
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                const shouldOpen =
+                    gestureState.dx < -SWIPE_OPEN_THRESHOLD ||
+                    (openRef.current && gestureState.dx < SWIPE_OPEN_THRESHOLD);
+                animateTo(shouldOpen ? -SWIPE_DELETE_WIDTH : 0);
+            },
+            onPanResponderTerminate: () => {
+                animateTo(openRef.current ? -SWIPE_DELETE_WIDTH : 0);
+            },
+        })
+    ).current;
+
+    return (
+        <View style={styles.swipeItemContainer}>
+            <View style={styles.swipeDeleteBackground}>
+                <TouchableOpacity
+                    style={styles.swipeDeleteAction}
+                    onPress={onDelete}
+                    disabled={deleting}
+                >
+                    <Text style={styles.swipeDeleteActionText}>
+                        {deleting ? "Removing..." : "Delete"}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+            <Animated.View
+                style={[styles.swipeFrontRow, { transform: [{ translateX }] }]}
+                {...panResponder.panHandlers}
+            >
+                {children}
+            </Animated.View>
+        </View>
+    );
 }
 
 export default function AccountScreen() {
@@ -212,40 +267,35 @@ export default function AccountScreen() {
                                         ) : (
                                             <View style={styles.savedConcertsList}>
                                                 {savedConcerts.map((concert) => (
-                                                    <View key={concert.id} style={styles.savedConcertItem}>
-                                                        <View style={styles.savedConcertRow}>
-                                                            <View style={styles.savedConcertTextCol}>
-                                                                <Text
-                                                                    style={styles.savedConcertName}
-                                                                    numberOfLines={2}
-                                                                >
-                                                                    {concert.name || "Untitled concert"}
-                                                                </Text>
-                                                                <Text style={styles.savedConcertMeta}>
-                                                                    {concert.date || "Date TBD"}
-                                                                </Text>
-                                                                <Text
-                                                                    style={styles.savedConcertMeta}
-                                                                    numberOfLines={1}
-                                                                >
-                                                                    {concert.venue || "Venue TBD"}
-                                                                </Text>
+                                                    <SwipeToDeleteRow
+                                                        key={concert.id}
+                                                        deleting={removingId === concert.id}
+                                                        onDelete={() =>
+                                                            handleRemoveSavedConcert(concert.id)
+                                                        }
+                                                    >
+                                                        <View style={styles.savedConcertItem}>
+                                                            <View style={styles.savedConcertRow}>
+                                                                <View style={styles.savedConcertTextCol}>
+                                                                    <Text
+                                                                        style={styles.savedConcertName}
+                                                                        numberOfLines={2}
+                                                                    >
+                                                                        {concert.name || "Untitled concert"}
+                                                                    </Text>
+                                                                    <Text style={styles.savedConcertMeta}>
+                                                                        {concert.date || "Date TBD"}
+                                                                    </Text>
+                                                                    <Text
+                                                                        style={styles.savedConcertMeta}
+                                                                        numberOfLines={1}
+                                                                    >
+                                                                        {concert.venue || "Venue TBD"}
+                                                                    </Text>
+                                                                </View>
                                                             </View>
-                                                            <TouchableOpacity
-                                                                style={styles.removeSavedButton}
-                                                                onPress={() =>
-                                                                    handleRemoveSavedConcert(concert.id)
-                                                                }
-                                                                disabled={removingId === concert.id}
-                                                            >
-                                                                <Text style={styles.removeSavedButtonText}>
-                                                                    {removingId === concert.id
-                                                                        ? "..."
-                                                                        : "Remove"}
-                                                                </Text>
-                                                            </TouchableOpacity>
                                                         </View>
-                                                    </View>
+                                                    </SwipeToDeleteRow>
                                                 ))}
                                             </View>
                                         )}

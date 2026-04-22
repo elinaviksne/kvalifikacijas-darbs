@@ -139,6 +139,19 @@ export default StyleSheet.create({
     savedConcertsList: {
         gap: 10,
     },
+    swipeItemContainer: {
+        borderRadius: 12,
+        overflow: "hidden",
+    },
+    swipeDeleteBackground: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: "flex-end",
+        justifyContent: "center",
+        backgroundColor: "#111",
+    },
+    swipeFrontRow: {
+        backgroundColor: "transparent",
+    },
     savedConcertItem: {
         backgroundColor: "#181818",
         borderWidth: 1,
@@ -164,13 +177,14 @@ export default StyleSheet.create({
         color: "#aaa",
         fontSize: 13,
     },
-    removeSavedButton: {
-        backgroundColor: "#3a3a3a",
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
+    swipeDeleteAction: {
+        backgroundColor: "#b00020",
+        width: 104,
+        height: "100%",
+        alignItems: "center",
+        justifyContent: "center",
     },
-    removeSavedButtonText: {
+    swipeDeleteActionText: {
         color: "#fff",
         fontSize: 12,
         fontWeight: "700",
