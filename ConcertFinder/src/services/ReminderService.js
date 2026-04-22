@@ -2,6 +2,8 @@ import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
 const REMINDER_CHANNEL_ID = "concert-reminders";
+const TEST_REMINDERS = __DEV__ && false;
+const TEST_REMINDER_DELAY_MS = 60 * 1000;
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -48,7 +50,9 @@ async function ensureNotificationsReady() {
 }
 
 export async function scheduleConcertReminder({ name, date, venue }) {
-    const reminderDate = buildReminderDate(date);
+    const reminderDate = TEST_REMINDERS
+        ? new Date(Date.now() + TEST_REMINDER_DELAY_MS)
+        : buildReminderDate(date);
     if (!reminderDate || reminderDate <= new Date()) {
         return { scheduled: false, reminderAt: null, notificationId: null, reason: "date-unavailable" };
     }
