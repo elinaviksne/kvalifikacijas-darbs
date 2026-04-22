@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { DarkTheme, NavigationContainer } from "@react-navigation/native";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AppState, InteractionManager, Platform, View } from "react-native";
+import { AppState, InteractionManager, Platform } from "react-native";
 import * as NavigationBar from "expo-navigation-bar";
 import { StatusBar } from "expo-status-bar";
 import { HEADER_STATUS_BACKGROUND, TAB_BAR_BACKGROUND } from "./src/constants/layout";
@@ -39,15 +39,13 @@ export default function App() {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: TAB_BAR_BACKGROUND }}>
-      <SafeAreaProvider style={{ flex: 1 }}>
-        <StatusBar style="light" backgroundColor={HEADER_STATUS_BACKGROUND} translucent />
-        <AuthProvider>
-          <NavigationContainer theme={navigationTheme}>
-            <AppNavigator />
-          </NavigationContainer>
-        </AuthProvider>
-      </SafeAreaProvider>
-    </View>
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: TAB_BAR_BACKGROUND }}>
+      <StatusBar style="light" backgroundColor={HEADER_STATUS_BACKGROUND} translucent />
+      <AuthProvider>
+        <NavigationContainer theme={navigationTheme}>
+          <AppNavigator />
+        </NavigationContainer>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

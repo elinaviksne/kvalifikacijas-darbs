@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import {
-    View,
-    FlatList,
-    ActivityIndicator,
-    Text,
-    RefreshControl,
-} from "react-native";
+import { View, FlatList, ActivityIndicator, Text, RefreshControl } from "react-native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import ConcertCard, { getConcertSortDate } from "../components/ConcertCard";
 import {
