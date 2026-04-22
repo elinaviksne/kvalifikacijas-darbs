@@ -5,6 +5,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { collection, deleteDoc, doc, onSnapshot, query } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
+import { cancelConcertReminder } from "../services/ReminderService";
 import styles from "../styles/AccountScreenStyles";
 
 function mapAuthError(error) {
@@ -217,10 +218,11 @@ export default function AccountScreen() {
         }
     };
 
-    const handleRemoveSavedConcert = async (concertId) => {
+    const handleRemoveSavedConcert = async (concertId, reminderNotificationId) => {
         if (!user?.uid || !concertId || removingId) return;
         setRemovingId(concertId);
         try {
+            await cancelConcertReminder(reminderNotificationId);
             await deleteDoc(doc(db, "users", user.uid, "savedConcerts", concertId));
         } catch (removeError) {
             console.error("Failed to remove saved concert", removeError);
@@ -361,7 +363,10 @@ export default function AccountScreen() {
                                                         key={concert.id}
                                                         deleting={removingId === concert.id}
                                                         onDelete={() =>
-                                                            handleRemoveSavedConcert(concert.id)
+                                                            handleRemoveSavedConcert(
+                                                                concert.id,
+                                                                concert.reminderNotificationId
+                                                            )
                                                         }
                                                     >
                                                         <View style={styles.savedConcertItem}>

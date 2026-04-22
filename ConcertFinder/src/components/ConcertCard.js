@@ -6,6 +6,7 @@ import { deleteDoc, doc, onSnapshot, serverTimestamp, setDoc } from "firebase/fi
 import styles from "../styles/HomeScreenStyles";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
+import { cancelConcertReminder, scheduleConcertReminder } from "../services/ReminderService";
 
 function pickLocale(obj) {
     if (!obj || typeof obj !== "object") return null;
@@ -96,6 +97,7 @@ const ConcertCard = ({ item }) => {
     const [saved, setSaved] = useState(false);
     const [saveBusy, setSaveBusy] = useState(false);
     const [feedback, setFeedback] = useState("");
+    const [reminderNotificationId, setReminderNotificationId] = useState(null);
 
     useEffect(() => {
         let active = true;
@@ -117,11 +119,13 @@ const ConcertCard = ({ item }) => {
             (snap) => {
                 if (!active) return;
                 setSaved(snap.exists());
+                setReminderNotificationId(snap.exists() ? snap.data()?.reminderNotificationId || null : null);
                 setFeedback("");
             },
             () => {
                 if (active) {
                     setSaved(false);
+                    setReminderNotificationId(null);
                 }
             }
         );
@@ -158,11 +162,17 @@ const ConcertCard = ({ item }) => {
 
         try {
             if (saved) {
+                await cancelConcertReminder(reminderNotificationId);
                 await withTimeout(deleteDoc(ref), 10000);
                 setSaved(false);
                 setFeedback("Removed from saved concerts.");
                 Alert.alert("Removed", "Concert removed from saved concerts.");
             } else {
+                const reminder = await scheduleConcertReminder({
+                    name: c.name,
+                    date: c.date,
+                    venue: c.venue,
+                });
                 await withTimeout(
                     setDoc(ref, {
                     concertId: String(item.id),
@@ -171,16 +181,25 @@ const ConcertCard = ({ item }) => {
                     venue: c.venue || "",
                     url: c.url || "",
                     image: c.image || null,
-                    reminderAt: null,
-                    reminderEnabled: true,
+                    reminderAt: reminder.reminderAt,
+                    reminderEnabled: reminder.scheduled,
+                    reminderNotificationId: reminder.notificationId,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
                     }),
                     10000
                 );
                 setSaved(true);
-                setFeedback("Saved for reminders.");
-                Alert.alert("Saved", "Concert saved for reminders.");
+                if (reminder.scheduled) {
+                    setFeedback("Saved and reminder scheduled.");
+                    Alert.alert("Saved", "Concert saved and reminder scheduled.");
+                } else {
+                    setFeedback("Saved. Reminder was not scheduled.");
+                    Alert.alert(
+                        "Saved",
+                        "Concert was saved, but reminder could not be scheduled (permission/date issue)."
+                    );
+                }
             }
         } catch (error) {
             console.error("Save concert error", error);
@@ -209,7 +228,7 @@ const ConcertCard = ({ item }) => {
         } finally {
             setSaveBusy(false);
         }
-    }, [c.date, c.image, c.name, c.url, c.venue, item, saveBusy, saved, user?.uid]);
+    }, [c.date, c.image, c.name, c.url, c.venue, item, reminderNotificationId, saveBusy, saved, user?.uid]);
 
     return (
         <View style={styles.card}>
