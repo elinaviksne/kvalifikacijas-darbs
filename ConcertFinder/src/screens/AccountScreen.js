@@ -22,6 +22,12 @@ function mapAuthError(error) {
     if (code === "auth/operation-not-allowed") {
         return "Enable Email/Password sign-in in Firebase Authentication settings.";
     }
+    if (code === "auth/requires-recent-login") {
+        return "For security reasons, please sign out and sign back in before updating account details.";
+    }
+    if (code === "auth/email-already-exists") {
+        return "This email is already used by another account.";
+    }
     const msg = error?.message ? String(error.message) : null;
     if (code || msg) {
         return `Auth error: ${code || "unknown"}${msg ? ` - ${msg}` : ""}`;
@@ -34,7 +40,7 @@ function profileFromUser(user) {
         return { displayName: "Guest", username: "@guest", initials: "G" };
     }
     const local = user.email.split("@")[0] || "user";
-    const cleaned = local.replace(/[._-]+/g, " ").trim();
+    const cleaned = (user.displayName || local).replace(/[._-]+/g, " ").trim();
     const displayName =
         cleaned.length > 0
             ? cleaned
@@ -121,7 +127,7 @@ function SwipeToDeleteRow({ children, onDelete, deleting }) {
 }
 
 export default function AccountScreen() {
-    const { user, initializing, signIn, signUp, signOutUser } = useAuth();
+    const { user, initializing, signIn, signUp, signOutUser, updateAccount } = useAuth();
     const tabBarHeight = useBottomTabBarHeight();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -131,7 +137,22 @@ export default function AccountScreen() {
     const [savedLoading, setSavedLoading] = useState(false);
     const [savedError, setSavedError] = useState("");
     const [removingId, setRemovingId] = useState("");
+    const [editingAccount, setEditingAccount] = useState(false);
+    const [editDisplayName, setEditDisplayName] = useState("");
+    const [editEmail, setEditEmail] = useState("");
+    const [savingAccount, setSavingAccount] = useState(false);
     const profile = profileFromUser(user);
+
+    useEffect(() => {
+        if (!user) {
+            setEditingAccount(false);
+            setEditDisplayName("");
+            setEditEmail("");
+            return;
+        }
+        setEditDisplayName(user.displayName || "");
+        setEditEmail(user.email || "");
+    }, [user]);
 
     useEffect(() => {
         if (!user?.uid) {
@@ -209,6 +230,31 @@ export default function AccountScreen() {
         }
     };
 
+    const handleSaveAccount = async () => {
+        setError("");
+        if (!user) return;
+
+        const nextName = editDisplayName.trim();
+        const nextEmail = editEmail.trim();
+
+        if (!nextEmail) {
+            setError("Email cannot be empty.");
+            return;
+        }
+
+        setSavingAccount(true);
+        try {
+            await updateAccount({ displayName: nextName, email: nextEmail });
+            setEditingAccount(false);
+            Alert.alert("Updated", "Your account details were saved.");
+        } catch (e) {
+            console.error("Account update error", e);
+            setError(mapAuthError(e));
+        } finally {
+            setSavingAccount(false);
+        }
+    };
+
     return (
         <View style={styles.statusBarFill}>
             <SafeAreaView style={styles.safeTransparent} edges={["top", "left", "right"]}>
@@ -243,10 +289,54 @@ export default function AccountScreen() {
                                         </View>
                                         <Text style={styles.displayName}>{profile.displayName}</Text>
                                         <Text style={styles.username}>{profile.username}</Text>
-                                        <TouchableOpacity style={styles.editButton} disabled={busy}>
-                                            <Text style={styles.editButtonText}>Edit account</Text>
+                                        <TouchableOpacity
+                                            style={styles.editButton}
+                                            disabled={busy || savingAccount}
+                                            onPress={() => {
+                                                if (editingAccount) {
+                                                    setEditingAccount(false);
+                                                    setEditDisplayName(user?.displayName || "");
+                                                    setEditEmail(user?.email || "");
+                                                } else {
+                                                    setEditingAccount(true);
+                                                }
+                                            }}
+                                        >
+                                            <Text style={styles.editButtonText}>
+                                                {editingAccount ? "Cancel" : "Edit account"}
+                                            </Text>
                                         </TouchableOpacity>
                                     </View>
+
+                                    {editingAccount ? (
+                                        <View style={styles.editAccountCard}>
+                                            <TextInput
+                                                style={styles.input}
+                                                placeholder="Display name"
+                                                placeholderTextColor="#888"
+                                                value={editDisplayName}
+                                                onChangeText={setEditDisplayName}
+                                            />
+                                            <TextInput
+                                                style={styles.input}
+                                                placeholder="Email"
+                                                placeholderTextColor="#888"
+                                                keyboardType="email-address"
+                                                autoCapitalize="none"
+                                                value={editEmail}
+                                                onChangeText={setEditEmail}
+                                            />
+                                            <TouchableOpacity
+                                                style={styles.actionButton}
+                                                onPress={handleSaveAccount}
+                                                disabled={savingAccount}
+                                            >
+                                                <Text style={styles.actionButtonText}>
+                                                    {savingAccount ? "Saving..." : "Save account"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    ) : null}
 
                                     <View style={styles.savedConcertsSection}>
                                         <Text style={styles.savedTitle}>Saved concerts</Text>
@@ -304,7 +394,7 @@ export default function AccountScreen() {
                                 <TouchableOpacity
                                     style={[styles.actionButton, styles.secondaryButton]}
                                     onPress={handleSignOut}
-                                    disabled={busy}
+                                    disabled={busy || savingAccount}
                                 >
                                     <Text style={styles.actionButtonText}>
                                         {busy ? "Signing out..." : "Sign out"}

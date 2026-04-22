@@ -5,6 +5,8 @@ import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
     signOut,
+    updateEmail,
+    updateProfile,
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
@@ -53,6 +55,26 @@ export function AuthProvider({ children }) {
         return unsub;
     }, []);
 
+    const updateAccount = async ({ displayName, email }) => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error("No authenticated user.");
+
+        const nextDisplayName = typeof displayName === "string" ? displayName.trim() : "";
+        const nextEmail = typeof email === "string" ? email.trim() : "";
+
+        if (nextDisplayName !== (currentUser.displayName || "")) {
+            await updateProfile(currentUser, { displayName: nextDisplayName });
+        }
+        if (nextEmail && nextEmail !== currentUser.email) {
+            await updateEmail(currentUser, nextEmail);
+        }
+
+        await ensureUserProfile(currentUser);
+        await currentUser.reload();
+        setUser(auth.currentUser);
+        return auth.currentUser;
+    };
+
     const value = useMemo(
         () => ({
             user,
@@ -60,6 +82,7 @@ export function AuthProvider({ children }) {
             signIn: (email, password) => signInWithEmailAndPassword(auth, email, password),
             signUp: (email, password) => createUserWithEmailAndPassword(auth, email, password),
             signOutUser: () => signOut(auth),
+            updateAccount,
         }),
         [user, initializing]
     );

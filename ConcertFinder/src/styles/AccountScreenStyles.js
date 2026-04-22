@@ -112,6 +112,15 @@ export default StyleSheet.create({
         color: "#111",
         fontWeight: "700",
     },
+    editAccountCard: {
+        marginTop: 8,
+        backgroundColor: "#181818",
+        borderWidth: 1,
+        borderColor: "#333",
+        borderRadius: 12,
+        padding: 12,
+        gap: 10,
+    },
     savedConcertsSection: {
         marginTop: 8,
     },
